@@ -21,14 +21,16 @@ export const authOptions: NextAuthOptions = {
     },
     async signIn({ user }) {
       // Only allow the admin email to sign in
-      const adminEmail = process.env.ADMIN_EMAIL;
-      if (adminEmail && user.email !== adminEmail) {
+      const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase();
+      const userEmail = user.email?.toLowerCase();
+      console.log("Sign-in attempt:", { userEmail, adminEmail });
+      if (adminEmail && userEmail !== adminEmail) {
         return false;
       }
       // Set admin role on first sign in
-      if (user.email === adminEmail) {
+      if (userEmail && userEmail === adminEmail) {
         await prisma.user.updateMany({
-          where: { email: adminEmail },
+          where: { email: user.email! },
           data: { role: "admin" },
         });
       }
