@@ -3,6 +3,8 @@ import { Feed } from "feed";
 import prisma from "@/lib/prisma";
 import { siteConfig } from "@/lib/constants";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const posts = await prisma.post.findMany({
     where: { published: true },

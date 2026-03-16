@@ -2,20 +2,9 @@ import { MetadataRoute } from "next";
 import prisma from "@/lib/prisma";
 import { siteConfig } from "@/lib/constants";
 
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const posts = await prisma.post.findMany({
-    where: { published: true },
-    select: { slug: true, updatedAt: true },
-    orderBy: { updatedAt: "desc" },
-  });
-
-  const blogPosts = posts.map((post) => ({
-    url: `${siteConfig.url}/blog/${post.slug}`,
-    lastModified: post.updatedAt,
-    changeFrequency: "weekly" as const,
-    priority: 0.7,
-  }));
-
   const staticPages = [
     { url: siteConfig.url, changeFrequency: "monthly" as const, priority: 1 },
     { url: `${siteConfig.url}/about`, changeFrequency: "monthly" as const, priority: 0.8 },
@@ -25,5 +14,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${siteConfig.url}/resume`, changeFrequency: "monthly" as const, priority: 0.6 },
   ];
 
-  return [...staticPages, ...blogPosts];
+  try {
+    const posts = await prisma.post.findMany({
+      where: { published: true },
+      select: { slug: true, updatedAt: true },
+      orderBy: { updatedAt: "desc" },
+    });
+
+    const blogPosts = posts.map((post) => ({
+      url: `${siteConfig.url}/blog/${post.slug}`,
+      lastModified: post.updatedAt,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    }));
+
+    return [...staticPages, ...blogPosts];
+  } catch {
+    // Database may not be reachable at build time (e.g. Railway internal network)
+    return staticPages;
+  }
 }

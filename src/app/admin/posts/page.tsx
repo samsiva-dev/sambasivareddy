@@ -6,6 +6,8 @@ import prisma from "@/lib/prisma";
 import { Plus, ArrowLeft } from "lucide-react";
 import { PostListItem } from "@/components/admin/post-list-item";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = { title: "Manage Posts" };
 
 export default async function AdminPostsPage() {

@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import prisma from "@/lib/prisma";
 import { FileText, Eye, PenLine, Plus, Tag, Users } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Admin Dashboard",
 };
