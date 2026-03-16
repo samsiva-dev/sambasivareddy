@@ -13,7 +13,7 @@ interface ContactMessage {
   subject: string;
   message: string;
   read: boolean;
-  createdAt: string;
+  createdAt: string | Date;
 }
 
 export function MessageList({ initialMessages }: { initialMessages: ContactMessage[] }) {
