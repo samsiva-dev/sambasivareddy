@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import prisma from "@/lib/prisma";
-import { FileText, Eye, PenLine, Plus, Tag, Users } from "lucide-react";
+import { FileText, Eye, PenLine, Plus, Tag, Users, Mail } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -12,13 +12,14 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminDashboard() {
-  const [totalPosts, publishedPosts, draftPosts, totalTags, totalSubscribers] =
+  const [totalPosts, publishedPosts, draftPosts, totalTags, totalSubscribers, unreadMessages] =
     await Promise.all([
       prisma.post.count(),
       prisma.post.count({ where: { published: true } }),
       prisma.post.count({ where: { published: false } }),
       prisma.tag.count(),
       prisma.subscriber.count({ where: { active: true } }),
+      prisma.contactMessage.count({ where: { read: false } }),
     ]);
 
   const recentPosts = await prisma.post.findMany({
@@ -33,6 +34,7 @@ export default async function AdminDashboard() {
     { title: "Drafts", value: draftPosts, icon: PenLine },
     { title: "Tags", value: totalTags, icon: Tag },
     { title: "Subscribers", value: totalSubscribers, icon: Users },
+    { title: "Messages", value: unreadMessages, icon: Mail, href: "/admin/messages" },
   ];
 
   return (
@@ -51,22 +53,29 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-8">
-        {stats.map((stat) => (
-          <Card key={stat.title}>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="rounded-md bg-muted p-2">
-                  <stat.icon className="h-4 w-4 text-muted-foreground" />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6 mb-8">
+        {stats.map((stat) => {
+          const content = (
+            <Card key={stat.title} className={stat.href ? "hover:border-primary/50 transition-colors cursor-pointer" : ""}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-md bg-muted p-2">
+                    <stat.icon className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{stat.value}</p>
+                    <p className="text-xs text-muted-foreground">{stat.title}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-2xl font-bold">{stat.value}</p>
-                  <p className="text-xs text-muted-foreground">{stat.title}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          );
+          return stat.href ? (
+            <Link key={stat.title} href={stat.href}>{content}</Link>
+          ) : (
+            <div key={stat.title}>{content}</div>
+          );
+        })}
       </div>
 
       {/* Recent Posts */}

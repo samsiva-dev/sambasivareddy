@@ -93,3 +93,16 @@ model Subscriber {
   createdAt DateTime @default(now())
   active    Boolean  @default(true)
 }
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  subject   String
+  message   String   @db.Text
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([read])
+}
