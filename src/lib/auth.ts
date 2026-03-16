@@ -21,7 +21,7 @@ export const authOptions: NextAuthOptions = {
     },
     async signIn({ user }) {
       // Only allow the admin email to sign in
-      const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase();
+      const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase().trim();
       const userEmail = user.email?.toLowerCase();
       console.log("Sign-in attempt:", { userEmail, adminEmail });
       if (adminEmail && userEmail !== adminEmail) {
