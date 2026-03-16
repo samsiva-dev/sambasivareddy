@@ -36,28 +36,38 @@ async function getPosts(page: number, tag?: string, search?: string) {
     ];
   }
 
-  const [posts, total] = await Promise.all([
-    prisma.post.findMany({
-      where,
-      include: {
-        author: { select: { name: true, image: true } },
-        tags: true,
-      },
-      orderBy: { createdAt: "desc" },
-      skip,
-      take: limit,
-    }),
-    prisma.post.count({ where }),
-  ]);
+  try {
+    const [posts, total] = await Promise.all([
+      prisma.post.findMany({
+        where,
+        include: {
+          author: { select: { name: true, image: true } },
+          tags: true,
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.post.count({ where }),
+    ]);
 
-  return { posts, total, totalPages: Math.ceil(total / limit) };
+    return { posts, total, totalPages: Math.ceil(total / limit) };
+  } catch (error) {
+    console.error("Failed to fetch posts:", error);
+    return { posts: [], total: 0, totalPages: 0 };
+  }
 }
 
 async function getTags() {
-  return prisma.tag.findMany({
-    include: { _count: { select: { posts: true } } },
-    orderBy: { name: "asc" },
-  });
+  try {
+    return await prisma.tag.findMany({
+      include: { _count: { select: { posts: true } } },
+      orderBy: { name: "asc" },
+    });
+  } catch (error) {
+    console.error("Failed to fetch tags:", error);
+    return [];
+  }
 }
 
 export default async function BlogPage({ searchParams }: BlogPageProps) {
