@@ -3,8 +3,8 @@ export const siteConfig = {
   title: "Samba Siva Reddy - Software Engineer",
   description:
     "Database engineer at Zoho Corporation working on core PostgreSQL internals and distributed systems. Experienced in query optimization, PostgreSQL, and full-stack web development.",
-  url: "https://sambasivareddy.in",
-  ogImage: "https://sambasivareddy.in/og.png",
+  url: "https://sambasivareddy.up.railway.app",
+  ogImage: "https://sambasivareddy.up.railway.app/og.png",
   links: {
     github: "https://github.com/samsiva-dev",
     linkedin: "https://www.linkedin.com/in/samba-siva-reddy-ch",
