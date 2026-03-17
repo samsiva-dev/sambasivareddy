@@ -10,6 +10,7 @@ import { siteConfig } from "@/lib/constants";
 import { formatDate, calculateReadingTime, absoluteUrl } from "@/lib/utils";
 import prisma from "@/lib/prisma";
 import { ArrowLeft, Clock, Calendar } from "lucide-react";
+import { LikeButton } from "@/components/like-button";
 
 export const revalidate = 60;
 export const dynamicParams = true;
@@ -174,6 +175,9 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                   <span>{calculateReadingTime(post.content)}</span>
                 </div>
                 {post.author.name && <span>by {post.author.name}</span>}
+              </div>
+              <div className="mt-4">
+                <LikeButton slug={post.slug} initialLikes={post.likes} />
               </div>
             </header>
 
