@@ -11,6 +11,9 @@ import { formatDate, calculateReadingTime, absoluteUrl } from "@/lib/utils";
 import prisma from "@/lib/prisma";
 import { ArrowLeft, Clock, Calendar } from "lucide-react";
 
+export const revalidate = 60;
+export const dynamicParams = true;
+
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
 }

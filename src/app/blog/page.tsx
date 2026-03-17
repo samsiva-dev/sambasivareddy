@@ -10,6 +10,9 @@ import prisma from "@/lib/prisma";
 import { Clock, Search } from "lucide-react";
 import { BlogSearch } from "@/components/blog-search";
 
+export const revalidate = 60;
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Blog",
   description: `Technical articles and thoughts by ${siteConfig.author.name} on software engineering, web development, and technology.`,

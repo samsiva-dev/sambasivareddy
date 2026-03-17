@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
@@ -128,6 +129,9 @@ export async function POST(request: NextRequest) {
         tags: true,
       },
     });
+
+    // Revalidate blog pages so the new post appears immediately
+    revalidatePath("/blog");
 
     return NextResponse.json(post, { status: 201 });
   } catch (error) {
