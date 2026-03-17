@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { subscriberSchema } from "@/lib/validations";
+import { resend, emailFromHello } from "@/lib/resend";
+import { welcomeEmailHtml, welcomeEmailText } from "@/lib/email-templates";
+import { absoluteUrl } from "@/lib/utils";
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,10 +30,45 @@ export async function POST(request: NextRequest) {
         where: { email },
         data: { active: true },
       });
+
+      // Send welcome-back email
+      if (resend) {
+        const unsubscribeUrl = absoluteUrl(
+          `/api/unsubscribe?email=${encodeURIComponent(email)}&id=${existing.id}`
+        );
+        resend.emails
+          .send({
+            from: emailFromHello,
+            to: email,
+            subject: `Welcome back to ${"Samba Siva Reddy"}'s blog!`,
+            html: welcomeEmailHtml({ unsubscribeUrl }),
+            text: welcomeEmailText({ unsubscribeUrl }),
+            headers: { "List-Unsubscribe": `<${unsubscribeUrl}>` },
+          })
+          .catch((err) => console.error("Welcome-back email failed:", err));
+      }
+
       return NextResponse.json({ message: "Subscription reactivated" });
     }
 
-    await prisma.subscriber.create({ data: { email } });
+    const subscriber = await prisma.subscriber.create({ data: { email } });
+
+    // Send welcome email in the background
+    if (resend) {
+      const unsubscribeUrl = absoluteUrl(
+        `/api/unsubscribe?email=${encodeURIComponent(email)}&id=${subscriber.id}`
+      );
+      resend.emails
+        .send({
+          from: emailFromHello,
+          to: email,
+          subject: `Welcome to ${"Samba Siva Reddy"}'s blog!`,
+          html: welcomeEmailHtml({ unsubscribeUrl }),
+          text: welcomeEmailText({ unsubscribeUrl }),
+          headers: { "List-Unsubscribe": `<${unsubscribeUrl}>` },
+        })
+        .catch((err) => console.error("Welcome email failed:", err));
+    }
 
     return NextResponse.json({ message: "Subscribed successfully" }, { status: 201 });
   } catch (error) {

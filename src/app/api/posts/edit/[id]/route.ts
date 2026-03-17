@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { postSchema } from "@/lib/validations";
 import { slugify } from "@/lib/utils";
+import { notifySubscribers } from "@/lib/notify-subscribers";
 
 // PUT /api/posts/edit/[id] - Update a post (admin only)
 export async function PUT(
@@ -72,6 +73,15 @@ export async function PUT(
     revalidatePath(`/blog/${post.slug}`);
     if (existingPost.slug !== post.slug) {
       revalidatePath(`/blog/${existingPost.slug}`);
+    }
+
+    // Notify subscribers if post was just published (draft → published)
+    if (post.published && !existingPost.published) {
+      notifySubscribers({
+        postTitle: post.title,
+        postSlug: post.slug,
+        postExcerpt: post.excerpt,
+      }).catch(console.error);
     }
 
     return NextResponse.json(post);

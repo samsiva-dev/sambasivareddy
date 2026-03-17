@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { postSchema } from "@/lib/validations";
 import { slugify } from "@/lib/utils";
+import { notifySubscribers } from "@/lib/notify-subscribers";
 
 // GET /api/posts - Get all posts (public: published only, admin: all)
 export async function GET(request: NextRequest) {
@@ -132,6 +133,15 @@ export async function POST(request: NextRequest) {
 
     // Revalidate blog pages so the new post appears immediately
     revalidatePath("/blog");
+
+    // Notify subscribers if the post is published immediately
+    if (post.published) {
+      notifySubscribers({
+        postTitle: post.title,
+        postSlug: post.slug,
+        postExcerpt: post.excerpt,
+      }).catch(console.error);
+    }
 
     return NextResponse.json(post, { status: 201 });
   } catch (error) {

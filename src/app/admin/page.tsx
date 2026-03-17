@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import prisma from "@/lib/prisma";
 import { FileText, Eye, PenLine, Plus, Tag, Users, Mail } from "lucide-react";
+import { DigestCard } from "@/components/admin/digest-card";
 
 export const dynamic = "force-dynamic";
 
@@ -124,6 +125,11 @@ export default async function AdminDashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Monthly Digest */}
+      <div className="mt-8">
+        <DigestCard />
+      </div>
     </div>
   );
 }
