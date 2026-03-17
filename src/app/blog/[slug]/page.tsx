@@ -9,8 +9,12 @@ import { NewsletterForm } from "@/components/newsletter-form";
 import { siteConfig } from "@/lib/constants";
 import { formatDate, calculateReadingTime, absoluteUrl } from "@/lib/utils";
 import prisma from "@/lib/prisma";
-import { ArrowLeft, Clock, Calendar } from "lucide-react";
+import { ArrowLeft, Clock, Calendar, Eye } from "lucide-react";
 import { LikeButton } from "@/components/like-button";
+import { ReactionBar } from "@/components/reaction-bar";
+import { ShareButtons } from "@/components/share-buttons";
+import { BookmarkButton } from "@/components/bookmark-button";
+import { ViewTracker } from "@/components/view-tracker";
 
 export const revalidate = 60;
 export const dynamicParams = true;
@@ -130,6 +134,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   return (
     <>
+      <ViewTracker slug={slug} />
       <ReadingProgressBar />
       <script
         type="application/ld+json"
@@ -175,9 +180,14 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                   <span>{calculateReadingTime(post.content)}</span>
                 </div>
                 {post.author.name && <span>by {post.author.name}</span>}
+                <div className="flex items-center gap-1">
+                  <Eye className="h-4 w-4" />
+                  <span>{post.views.toLocaleString()} views</span>
+                </div>
               </div>
-              <div className="mt-4">
-                <LikeButton slug={post.slug} initialLikes={post.likes} />
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <BookmarkButton slug={post.slug} title={post.title} />
+                <ShareButtons url={absoluteUrl(`/blog/${post.slug}`)} title={post.title} />
               </div>
             </header>
 
@@ -198,6 +208,21 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               className="prose dark:prose-invert"
               dangerouslySetInnerHTML={{ __html: post.content }}
             />
+
+            {/* Reactions */}
+            <div className="mt-12 pt-6 border-t">
+              <h3 className="text-sm font-medium text-muted-foreground mb-3">Enjoyed this post?</h3>
+              <ReactionBar
+                slug={post.slug}
+                initialReactions={{
+                  heart: post.likes,
+                  fire: post.reactionFire,
+                  mind: post.reactionMind,
+                  idea: post.reactionIdea,
+                  clap: post.reactionClap,
+                }}
+              />
+            </div>
 
             {/* Tags bottom */}
             {post.tags.length > 0 && (

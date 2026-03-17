@@ -34,6 +34,7 @@ export default async function EditPostPage({ params }: EditPostPageProps) {
         coverImage: post.coverImage || "",
         published: post.published,
         featured: post.featured,
+        publishAt: post.publishAt ? new Date(post.publishAt).toISOString().slice(0, 16) : "",
         tags: post.tags,
         metaTitle: post.metaTitle || "",
         metaDescription: post.metaDescription || "",

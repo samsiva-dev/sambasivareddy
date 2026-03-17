@@ -9,6 +9,7 @@ export const postSchema = z.object({
   published: z.boolean().default(false),
   featured: z.boolean().default(false),
   tags: z.array(z.string()).default([]),
+  publishAt: z.string().optional().or(z.literal("")), // ISO date string or empty
   metaTitle: z.string().max(60).optional(),
   metaDescription: z.string().max(160).optional(),
   ogImage: z.string().url().optional().or(z.literal("")),

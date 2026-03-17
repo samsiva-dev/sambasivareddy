@@ -65,11 +65,18 @@ model Post {
   featured   Boolean  @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  publishAt  DateTime? // scheduled publishing — null = immediate
   authorId   String
   author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   tags       Tag[]    @relation("PostTags")
 
-  likes  Int     @default(0)
+  // Engagement metrics
+  views         Int @default(0)
+  likes         Int @default(0)
+  reactionFire  Int @default(0)
+  reactionMind  Int @default(0)
+  reactionIdea  Int @default(0)
+  reactionClap  Int @default(0)
 
   metaTitle       String?
   metaDescription String?
@@ -78,6 +85,7 @@ model Post {
   @@index([slug])
   @@index([published])
   @@index([createdAt])
+  @@index([publishAt])
 }
 
 model Tag {

@@ -4,8 +4,12 @@ import { subscriberSchema } from "@/lib/validations";
 import { resend, emailFromHello } from "@/lib/resend";
 import { welcomeEmailHtml, welcomeEmailText } from "@/lib/email-templates";
 import { absoluteUrl } from "@/lib/utils";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
+  const limited = rateLimit(request, { limit: 5, windowSeconds: 300 });
+  if (limited) return limited;
+
   try {
     const body = await request.json();
     const validation = subscriberSchema.safeParse(body);

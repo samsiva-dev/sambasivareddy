@@ -88,7 +88,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { tags: tagNames, ...postData } = validation.data;
+    const { tags: tagNames, publishAt, ...postData } = validation.data;
+
+    // Parse publishAt date
+    const publishAtDate = publishAt ? new Date(publishAt) : null;
+
+    // If there's a future publishAt, save as unpublished (scheduled)
+    if (publishAtDate && publishAtDate > new Date()) {
+      postData.published = false;
+    }
 
     // Generate slug if not provided
     if (!postData.slug) {
@@ -122,6 +130,7 @@ export async function POST(request: NextRequest) {
         ...postData,
         coverImage: postData.coverImage || null,
         ogImage: postData.ogImage || null,
+        publishAt: publishAtDate,
         authorId: (session.user as any).id,
         tags: { connect: tagConnections },
       },

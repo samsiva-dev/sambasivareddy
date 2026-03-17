@@ -23,6 +23,7 @@ interface PostFormProps {
     coverImage: string;
     published: boolean;
     featured: boolean;
+    publishAt: string;
     tags: { id: string; name: string; slug: string }[];
     metaTitle: string;
     metaDescription: string;
@@ -46,6 +47,7 @@ export function PostForm({ initialData }: PostFormProps) {
   const [metaTitle, setMetaTitle] = useState(initialData?.metaTitle || "");
   const [metaDescription, setMetaDescription] = useState(initialData?.metaDescription || "");
   const [ogImage, setOgImage] = useState(initialData?.ogImage || "");
+  const [publishAt, setPublishAt] = useState(initialData?.publishAt || "");
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
@@ -96,6 +98,7 @@ export function PostForm({ initialData }: PostFormProps) {
         published: asDraft ? false : published,
         featured,
         tags,
+        publishAt,
         metaTitle,
         metaDescription,
         ogImage,
@@ -233,6 +236,18 @@ export function PostForm({ initialData }: PostFormProps) {
                   checked={featured}
                   onCheckedChange={setFeatured}
                 />
+              </div>
+              <div className="space-y-2 pt-2 border-t">
+                <Label htmlFor="publishAt">Schedule Publish</Label>
+                <Input
+                  id="publishAt"
+                  type="datetime-local"
+                  value={publishAt}
+                  onChange={(e) => setPublishAt(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {publishAt ? "Post will auto-publish at this time" : "Leave empty for immediate publish"}
+                </p>
               </div>
             </div>
 

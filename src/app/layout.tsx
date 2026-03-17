@@ -6,6 +6,7 @@ import { AuthProvider } from "@/components/auth-provider";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { siteConfig } from "@/lib/constants";
+import { ServiceWorkerRegister } from "@/components/sw-register";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -75,7 +76,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head />
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#0f172a" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+      </head>
 
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
@@ -92,6 +98,7 @@ export default function RootLayout({
               <main className="flex-1">{children}</main>
               <Footer />
             </div>
+            <ServiceWorkerRegister />
           </ThemeProvider>
         </AuthProvider>
       </body>

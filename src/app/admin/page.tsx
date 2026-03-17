@@ -3,8 +3,9 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import prisma from "@/lib/prisma";
-import { FileText, Eye, PenLine, Plus, Tag, Users, Mail } from "lucide-react";
+import { FileText, Eye, PenLine, Plus, Tag, Users, Mail, BarChart3, Timer } from "lucide-react";
 import { DigestCard } from "@/components/admin/digest-card";
+import { ScheduledCard } from "@/components/admin/scheduled-card";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminDashboard() {
-  const [totalPosts, publishedPosts, draftPosts, totalTags, totalSubscribers, unreadMessages] =
+  const [totalPosts, publishedPosts, draftPosts, totalTags, totalSubscribers, unreadMessages, totalViewsAgg, scheduledCount] =
     await Promise.all([
       prisma.post.count(),
       prisma.post.count({ where: { published: true } }),
@@ -21,7 +22,11 @@ export default async function AdminDashboard() {
       prisma.tag.count(),
       prisma.subscriber.count({ where: { active: true } }),
       prisma.contactMessage.count({ where: { read: false } }),
+      prisma.post.aggregate({ _sum: { views: true } }),
+      prisma.post.count({ where: { published: false, publishAt: { gt: new Date() } } }),
     ]);
+
+  const totalViews = totalViewsAgg._sum.views || 0;
 
   const recentPosts = await prisma.post.findMany({
     orderBy: { createdAt: "desc" },
@@ -33,8 +38,10 @@ export default async function AdminDashboard() {
     { title: "Total Posts", value: totalPosts, icon: FileText },
     { title: "Published", value: publishedPosts, icon: Eye },
     { title: "Drafts", value: draftPosts, icon: PenLine },
-    { title: "Tags", value: totalTags, icon: Tag },
+    { title: "Views", value: totalViews, icon: BarChart3, href: "/admin/analytics" },
     { title: "Subscribers", value: totalSubscribers, icon: Users },
+    { title: "Scheduled", value: scheduledCount, icon: Timer },
+    { title: "Tags", value: totalTags, icon: Tag },
     { title: "Messages", value: unreadMessages, icon: Mail, href: "/admin/messages" },
   ];
 
@@ -54,7 +61,7 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6 mb-8">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
         {stats.map((stat) => {
           const content = (
             <Card key={stat.title} className={stat.href ? "hover:border-primary/50 transition-colors cursor-pointer" : ""}>
@@ -126,9 +133,10 @@ export default async function AdminDashboard() {
         </CardContent>
       </Card>
 
-      {/* Monthly Digest */}
-      <div className="mt-8">
+      {/* Monthly Digest + Scheduled */}
+      <div className="grid gap-6 md:grid-cols-2 mt-8">
         <DigestCard />
+        <ScheduledCard />
       </div>
     </div>
   );

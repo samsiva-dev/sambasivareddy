@@ -30,7 +30,13 @@ export async function PUT(
       );
     }
 
-    const { tags: tagNames, ...postData } = validation.data;
+    const { tags: tagNames, publishAt, ...postData } = validation.data;
+
+    const publishAtDate = publishAt ? new Date(publishAt) : null;
+
+    if (publishAtDate && publishAtDate > new Date()) {
+      postData.published = false;
+    }
 
     // Check if post exists
     const existingPost = await prisma.post.findUnique({ where: { id } });
@@ -57,6 +63,7 @@ export async function PUT(
         ...postData,
         coverImage: postData.coverImage || null,
         ogImage: postData.ogImage || null,
+        publishAt: publishAtDate,
         tags: {
           set: [],
           connect: tagConnections,
