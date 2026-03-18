@@ -170,18 +170,18 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               {post.excerpt && (
                 <p className="text-lg text-muted-foreground mb-4">{post.excerpt}</p>
               )}
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
+                  <Calendar className="h-4 w-4 shrink-0" />
                   <time>{formatDate(post.createdAt)}</time>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
+                  <Clock className="h-4 w-4 shrink-0" />
                   <span>{calculateReadingTime(post.content)}</span>
                 </div>
                 {post.author.name && <span>by {post.author.name}</span>}
                 <div className="flex items-center gap-1">
-                  <Eye className="h-4 w-4" />
+                  <Eye className="h-4 w-4 shrink-0" />
                   <span>{post.views.toLocaleString()} views</span>
                 </div>
               </div>
