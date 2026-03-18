@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import prisma from "@/lib/prisma";
-import { FileText, Eye, PenLine, Plus, Tag, Users, Mail, BarChart3, Timer } from "lucide-react";
+import { FileText, Eye, PenLine, Plus, Tag, Users, Mail, BarChart3, Timer, MessageCircle } from "lucide-react";
 import { DigestCard } from "@/components/admin/digest-card";
 import { ScheduledCard } from "@/components/admin/scheduled-card";
 
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminDashboard() {
-  const [totalPosts, publishedPosts, draftPosts, totalTags, totalSubscribers, unreadMessages, totalViewsAgg, scheduledCount] =
+  const [totalPosts, publishedPosts, draftPosts, totalTags, totalSubscribers, unreadMessages, totalViewsAgg, scheduledCount, pendingComments] =
     await Promise.all([
       prisma.post.count(),
       prisma.post.count({ where: { published: true } }),
@@ -24,6 +24,7 @@ export default async function AdminDashboard() {
       prisma.contactMessage.count({ where: { read: false } }),
       prisma.post.aggregate({ _sum: { views: true } }),
       prisma.post.count({ where: { published: false, publishAt: { gt: new Date() } } }),
+      prisma.comment.count({ where: { approved: false } }),
     ]);
 
   const totalViews = totalViewsAgg._sum.views || 0;
@@ -39,10 +40,11 @@ export default async function AdminDashboard() {
     { title: "Published", value: publishedPosts, icon: Eye },
     { title: "Drafts", value: draftPosts, icon: PenLine },
     { title: "Views", value: totalViews, icon: BarChart3, href: "/admin/analytics" },
-    { title: "Subscribers", value: totalSubscribers, icon: Users },
+    { title: "Subscribers", value: totalSubscribers, icon: Users, href: "/admin/subscribers" },
     { title: "Scheduled", value: scheduledCount, icon: Timer },
     { title: "Tags", value: totalTags, icon: Tag },
     { title: "Messages", value: unreadMessages, icon: Mail, href: "/admin/messages" },
+    { title: "Comments", value: pendingComments, icon: MessageCircle, href: "/admin/comments" },
   ];
 
   return (

@@ -26,6 +26,14 @@ export const contactSchema = z.object({
   message: z.string().min(1, "Message is required").max(5000),
 });
 
+export const commentSchema = z.object({
+  postId: z.string().min(1, "Post ID is required"),
+  name: z.string().min(1, "Name is required").max(100),
+  email: z.string().email("Invalid email address"),
+  content: z.string().min(1, "Comment is required").max(2000),
+});
+
 export type PostInput = z.infer<typeof postSchema>;
 export type SubscriberInput = z.infer<typeof subscriberSchema>;
 export type ContactInput = z.infer<typeof contactSchema>;
+export type CommentInput = z.infer<typeof commentSchema>;

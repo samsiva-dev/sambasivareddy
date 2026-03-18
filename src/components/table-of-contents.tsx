@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 
 interface TOCItem {
   id: string;
@@ -11,20 +11,42 @@ interface TOCItem {
 export function TableOfContents({ content }: { content: string }) {
   const [headings, setHeadings] = useState<TOCItem[]>([]);
   const [activeId, setActiveId] = useState<string>("");
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
+  // Find headings in the actual rendered DOM and inject IDs
   useEffect(() => {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(content, "text/html");
-    const elements = doc.querySelectorAll("h2, h3");
+    // Target the prose container where content is rendered
+    const prose = document.querySelector(".prose");
+    if (!prose) return;
+
+    const elements = prose.querySelectorAll("h2, h3");
     const items: TOCItem[] = [];
+    const usedIds = new Set<string>();
 
     elements.forEach((el) => {
-      const id = el.textContent
-        ?.toLowerCase()
-        .replace(/[^\w\s-]/g, "")
-        .replace(/\s+/g, "-") || "";
+      let id =
+        el.id ||
+        el.textContent
+          ?.toLowerCase()
+          .replace(/[^\w\s-]/g, "")
+          .replace(/\s+/g, "-")
+          .replace(/-+/g, "-")
+          .replace(/^-|-$/g, "") ||
+        "";
+
+      // Ensure uniqueness
+      const baseId = id;
+      let counter = 1;
+      while (usedIds.has(id)) {
+        id = `${baseId}-${counter++}`;
+      }
+      usedIds.add(id);
+
+      // Inject the id into the actual DOM element
+      if (!el.id) el.id = id;
+
       items.push({
-        id,
+        id: el.id,
         text: el.textContent || "",
         level: parseInt(el.tagName.charAt(1)),
       });
@@ -33,25 +55,41 @@ export function TableOfContents({ content }: { content: string }) {
     setHeadings(items);
   }, [content]);
 
+  // Observe headings for active section tracking
   useEffect(() => {
-    const observer = new IntersectionObserver(
+    if (headings.length === 0) return;
+
+    observerRef.current = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveId(entry.target.id);
-          }
-        });
+        // Find the first intersecting entry
+        const visible = entries.find((e) => e.isIntersecting);
+        if (visible) {
+          setActiveId(visible.target.id);
+        }
       },
       { rootMargin: "0px 0px -80% 0px" }
     );
 
     headings.forEach(({ id }) => {
       const element = document.getElementById(id);
-      if (element) observer.observe(element);
+      if (element) observerRef.current!.observe(element);
     });
 
-    return () => observer.disconnect();
+    return () => observerRef.current?.disconnect();
   }, [headings]);
+
+  const handleClick = useCallback(
+    (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+      e.preventDefault();
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        // Update URL hash without jumping
+        window.history.pushState(null, "", `#${id}`);
+      }
+    },
+    []
+  );
 
   if (headings.length === 0) return null;
 
@@ -67,6 +105,7 @@ export function TableOfContents({ content }: { content: string }) {
             >
               <a
                 href={`#${heading.id}`}
+                onClick={(e) => handleClick(e, heading.id)}
                 className={`block py-1 transition-colors hover:text-foreground ${
                   activeId === heading.id
                     ? "text-foreground font-medium"

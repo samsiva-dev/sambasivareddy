@@ -82,6 +82,8 @@ model Post {
   metaDescription String?
   ogImage         String?
 
+  comments Comment[]
+
   @@index([slug])
   @@index([published])
   @@index([createdAt])
@@ -115,4 +117,19 @@ model ContactMessage {
 
   @@index([createdAt])
   @@index([read])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  name      String
+  email     String
+  content   String   @db.Text
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([postId])
+  @@index([createdAt])
+  @@index([approved])
 }

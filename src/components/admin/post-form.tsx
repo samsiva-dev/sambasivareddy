@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { TipTapEditor } from "@/components/admin/tiptap-editor";
 import { slugify } from "@/lib/utils";
-import { Save, Eye, ArrowLeft, X, Loader2 } from "lucide-react";
+import { Save, Eye, ArrowLeft, X, Loader2, Upload, Download } from "lucide-react";
 import Link from "next/link";
 
 interface PostFormProps {
@@ -50,6 +50,8 @@ export function PostForm({ initialData }: PostFormProps) {
   const [publishAt, setPublishAt] = useState(initialData?.publishAt || "");
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleTitleChange = (value: string) => {
     setTitle(value);
@@ -85,6 +87,45 @@ export function PostForm({ initialData }: PostFormProps) {
     const data = await res.json();
     return data.url;
   }, []);
+
+  const handleImportMarkdown = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/posts/import", { method: "POST", body: formData });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Import failed");
+      }
+      const { postData } = await res.json();
+      setTitle(postData.title || "");
+      if (postData.slug) setSlugState(postData.slug);
+      else if (postData.title) setSlugState(slugify(postData.title));
+      setContent(postData.content || "");
+      setExcerpt(postData.excerpt || "");
+      setCoverImage(postData.coverImage || "");
+      setPublished(postData.published || false);
+      setFeatured(postData.featured || false);
+      if (postData.tags?.length) setTags(postData.tags);
+      setMetaTitle(postData.metaTitle || "");
+      setMetaDescription(postData.metaDescription || "");
+      setOgImage(postData.ogImage || "");
+      if (postData.publishAt) setPublishAt(postData.publishAt);
+    } catch (err: any) {
+      alert(err.message || "Failed to import markdown");
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }, [isEditing]);
+
+  const handleExportMarkdown = useCallback(() => {
+    if (!initialData?.id || !slug) return;
+    window.open(`/api/posts/${encodeURIComponent(slug)}/export`, "_blank");
+  }, [initialData?.id, slug]);
 
   const handleSave = async (asDraft = false) => {
     setSaving(true);
@@ -140,6 +181,33 @@ export function PostForm({ initialData }: PostFormProps) {
           <h1 className="text-2xl font-bold">{isEditing ? "Edit Post" : "New Post"}</h1>
         </div>
         <div className="flex items-center gap-2">
+          {/* Import Markdown */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".md,.mdx"
+            className="hidden"
+            onChange={handleImportMarkdown}
+          />
+          <Button
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importing}
+          >
+            {importing ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="mr-2 h-4 w-4" />
+            )}
+            Import
+          </Button>
+          {/* Export Markdown */}
+          {isEditing && (
+            <Button variant="outline" onClick={handleExportMarkdown}>
+              <Download className="mr-2 h-4 w-4" />
+              Export
+            </Button>
+          )}
           <Button
             variant="outline"
             onClick={() => setShowPreview(!showPreview)}

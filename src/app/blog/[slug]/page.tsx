@@ -15,6 +15,7 @@ import { ReactionBar } from "@/components/reaction-bar";
 import { ShareButtons } from "@/components/share-buttons";
 import { BookmarkButton } from "@/components/bookmark-button";
 import { ViewTracker } from "@/components/view-tracker";
+import { CommentSection } from "@/components/comment-section";
 
 export const revalidate = 60;
 export const dynamicParams = true;
@@ -34,16 +35,47 @@ async function getPost(slug: string) {
 
   if (!post) return null;
 
-  const relatedPosts = await prisma.post.findMany({
-    where: {
-      published: true,
-      id: { not: post.id },
-      tags: { some: { id: { in: post.tags.map((t) => t.id) } } },
-    },
-    include: { tags: true },
-    take: 3,
-    orderBy: { createdAt: "desc" },
-  });
+  const tagIds = post.tags.map((t) => t.id);
+  let relatedPosts: any[] = [];
+
+  if (tagIds.length > 0) {
+    // Fetch candidate posts that share at least one tag
+    const candidates = await prisma.post.findMany({
+      where: {
+        published: true,
+        id: { not: post.id },
+        tags: { some: { id: { in: tagIds } } },
+      },
+      include: { tags: true },
+      take: 20,
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Score by shared tag count + engagement bonus
+    const scored = candidates.map((c) => {
+      const sharedTags = c.tags.filter((t) => tagIds.includes(t.id)).length;
+      const engagement = Math.log2((c.views || 0) + (c.likes || 0) + 2);
+      return { ...c, score: sharedTags * 10 + engagement };
+    });
+
+    scored.sort((a, b) => b.score - a.score);
+    relatedPosts = scored.slice(0, 3);
+  }
+
+  // Fallback: fill remaining slots with recent posts
+  if (relatedPosts.length < 3) {
+    const excludeIds = [post.id, ...relatedPosts.map((r) => r.id)];
+    const fallback = await prisma.post.findMany({
+      where: {
+        published: true,
+        id: { notIn: excludeIds },
+      },
+      include: { tags: true },
+      take: 3 - relatedPosts.length,
+      orderBy: { views: "desc" },
+    });
+    relatedPosts = [...relatedPosts, ...fallback];
+  }
 
   return { post, relatedPosts };
 }
@@ -259,6 +291,9 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 </div>
               </section>
             )}
+
+            {/* Comments */}
+            <CommentSection slug={slug} />
 
             {/* Newsletter */}
             <div className="mt-16">
