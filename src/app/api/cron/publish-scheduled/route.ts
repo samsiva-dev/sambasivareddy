@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
 import { notifySubscribers } from "@/lib/notify-subscribers";
+import { notifyScheduledPublished } from "@/lib/notify-admin";
 
 // GET /api/cron/publish-scheduled — cron-safe endpoint (no session required)
 // Secured via CRON_SECRET header or query param
@@ -56,10 +57,13 @@ export async function GET(request: NextRequest) {
 
     revalidatePath("/blog");
 
+    const titles = duePosts.map((p) => p.title);
+    notifyScheduledPublished(titles);
+
     return NextResponse.json({
       message: `Published ${duePosts.length} post(s)`,
       published: duePosts.length,
-      titles: duePosts.map((p) => p.title),
+      titles,
     });
   } catch (error) {
     console.error("Cron publish error:", error);

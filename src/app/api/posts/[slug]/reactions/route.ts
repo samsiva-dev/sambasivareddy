@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
+import { notifyReaction } from "@/lib/notify-admin";
 
 const VALID_REACTIONS = ["fire", "mind", "idea", "clap"] as const;
 type ReactionType = (typeof VALID_REACTIONS)[number];
@@ -65,8 +66,9 @@ export async function POST(
       const post = await prisma.post.update({
         where: { slug },
         data: { likes: { increment: 1 } },
-        select: { likes: true },
+        select: { likes: true, title: true },
       });
+      notifyReaction(post.title, "heart", post.likes);
       return NextResponse.json({ heart: post.likes });
     }
 
@@ -82,6 +84,7 @@ export async function POST(
       where: { slug },
       data: { [field]: { increment: 1 } },
       select: {
+        title: true,
         likes: true,
         reactionFire: true,
         reactionMind: true,
@@ -89,6 +92,9 @@ export async function POST(
         reactionClap: true,
       },
     });
+
+    const reactionCount = post[field as keyof typeof post] as number;
+    notifyReaction(post.title, type, reactionCount);
 
     return NextResponse.json({
       heart: post.likes,

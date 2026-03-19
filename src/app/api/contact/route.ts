@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { contactSchema } from "@/lib/validations";
 import { rateLimit } from "@/lib/rate-limit";
+import { notifyContactMessage } from "@/lib/notify-admin";
 
 export async function POST(request: NextRequest) {
   const limited = rateLimit(request, { limit: 5, windowSeconds: 300 });
@@ -21,6 +22,8 @@ export async function POST(request: NextRequest) {
     const contactMessage = await prisma.contactMessage.create({
       data: { name, email, subject, message },
     });
+
+    notifyContactMessage(name, subject);
 
     return NextResponse.json(
       { message: "Message sent successfully", id: contactMessage.id },

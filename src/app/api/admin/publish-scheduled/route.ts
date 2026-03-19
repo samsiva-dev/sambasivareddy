@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { notifySubscribers } from "@/lib/notify-subscribers";
+import { notifyScheduledPublished } from "@/lib/notify-admin";
 
 // POST /api/admin/publish-scheduled — publish all posts whose publishAt has passed
 export async function POST() {
@@ -49,6 +50,7 @@ export async function POST() {
     revalidatePath("/blog");
 
     const titles = duePosts.map((p) => p.title);
+    notifyScheduledPublished(titles);
 
     return NextResponse.json({
       message: `Published ${duePosts.length} scheduled post${duePosts.length !== 1 ? "s" : ""}.`,

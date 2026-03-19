@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { commentSchema } from "@/lib/validations";
 import { rateLimit } from "@/lib/rate-limit";
+import { notifyNewComment } from "@/lib/notify-admin";
 
 // GET /api/posts/[slug]/comments - Get approved comments for a post
 export async function GET(
@@ -46,7 +47,7 @@ export async function POST(
 
     const post = await prisma.post.findUnique({
       where: { slug, published: true },
-      select: { id: true },
+      select: { id: true, title: true },
     });
 
     if (!post) {
@@ -68,6 +69,9 @@ export async function POST(
     await prisma.comment.create({
       data: { postId: post.id, name, email, content },
     });
+
+    // Notify admin via Discord/Slack (fire-and-forget)
+    notifyNewComment(post.title, name);
 
     return NextResponse.json(
       { message: "Comment submitted and awaiting moderation" },

@@ -5,6 +5,7 @@ import { resend, emailFromHello } from "@/lib/resend";
 import { welcomeEmailHtml, welcomeEmailText } from "@/lib/email-templates";
 import { absoluteUrl } from "@/lib/utils";
 import { rateLimit } from "@/lib/rate-limit";
+import { notifyNewSubscriber } from "@/lib/notify-admin";
 
 export async function POST(request: NextRequest) {
   const limited = rateLimit(request, { limit: 5, windowSeconds: 300 });
@@ -73,6 +74,8 @@ export async function POST(request: NextRequest) {
         })
         .catch((err) => console.error("Welcome email failed:", err));
     }
+
+    notifyNewSubscriber();
 
     return NextResponse.json({ message: "Subscribed successfully" }, { status: 201 });
   } catch (error) {
