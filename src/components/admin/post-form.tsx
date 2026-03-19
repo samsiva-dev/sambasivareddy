@@ -47,7 +47,15 @@ export function PostForm({ initialData }: PostFormProps) {
   const [metaTitle, setMetaTitle] = useState(initialData?.metaTitle || "");
   const [metaDescription, setMetaDescription] = useState(initialData?.metaDescription || "");
   const [ogImage, setOgImage] = useState(initialData?.ogImage || "");
-  const [publishAt, setPublishAt] = useState(initialData?.publishAt || "");
+  // Convert ISO publishAt to local datetime-local format for the input
+  const [publishAt, setPublishAt] = useState(() => {
+    if (!initialData?.publishAt) return "";
+    const d = new Date(initialData.publishAt);
+    if (isNaN(d.getTime())) return initialData.publishAt;
+    // Format as YYYY-MM-DDTHH:MM in local timezone for datetime-local input
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  });
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -130,6 +138,11 @@ export function PostForm({ initialData }: PostFormProps) {
   const handleSave = async (asDraft = false) => {
     setSaving(true);
     try {
+      // Convert datetime-local value to a full ISO string with timezone
+      // datetime-local gives "YYYY-MM-DDTHH:MM" which is user's local time
+      // new Date("YYYY-MM-DDTHH:MM") in the browser interprets it as local time
+      const publishAtISO = publishAt ? new Date(publishAt).toISOString() : "";
+
       const postData = {
         title,
         slug,
@@ -139,7 +152,7 @@ export function PostForm({ initialData }: PostFormProps) {
         published: asDraft ? false : published,
         featured,
         tags,
-        publishAt,
+        publishAt: publishAtISO,
         metaTitle,
         metaDescription,
         ogImage,

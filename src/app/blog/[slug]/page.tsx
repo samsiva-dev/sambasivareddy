@@ -10,6 +10,7 @@ import { siteConfig } from "@/lib/constants";
 import { formatDate, calculateReadingTime, absoluteUrl } from "@/lib/utils";
 import prisma from "@/lib/prisma";
 import { ArrowLeft, Clock, Calendar, Eye } from "lucide-react";
+import { publishDueScheduledPosts } from "@/lib/publish-scheduled";
 import { LikeButton } from "@/components/like-button";
 import { ReactionBar } from "@/components/reaction-bar";
 import { ShareButtons } from "@/components/share-buttons";
@@ -25,6 +26,9 @@ interface BlogPostPageProps {
 }
 
 async function getPost(slug: string) {
+  // Auto-publish any due scheduled posts before fetching
+  await publishDueScheduledPosts();
+
   const post = await prisma.post.findUnique({
     where: { slug, published: true },
     include: {

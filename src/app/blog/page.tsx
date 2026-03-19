@@ -9,6 +9,7 @@ import { formatDate, calculateReadingTime } from "@/lib/utils";
 import prisma from "@/lib/prisma";
 import { Clock, Search } from "lucide-react";
 import { BlogSearch } from "@/components/blog-search";
+import { publishDueScheduledPosts } from "@/lib/publish-scheduled";
 
 export const revalidate = 60;
 export const dynamic = "force-dynamic";
@@ -23,6 +24,9 @@ interface BlogPageProps {
 }
 
 async function getPosts(page: number, tag?: string, search?: string) {
+  // Auto-publish any due scheduled posts before fetching
+  await publishDueScheduledPosts();
+
   const limit = 10;
   const skip = (page - 1) * limit;
 

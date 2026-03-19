@@ -19,7 +19,7 @@ export async function POST() {
     const duePosts = await prisma.post.findMany({
       where: {
         published: false,
-        publishAt: { lte: now },
+        publishAt: { not: null, lte: now },
       },
       select: { id: true, title: true, slug: true, excerpt: true },
     });
