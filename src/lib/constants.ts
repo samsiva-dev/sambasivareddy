@@ -26,6 +26,7 @@ export const siteConfig = {
     { title: "Blog", href: "/blog" },
     { title: "Bookmarks", href: "/bookmarks" },
     { title: "Contact", href: "/contact" },
+    { title: "Resume", href: "/resume" }
   ],
 };
 
@@ -33,7 +34,6 @@ export const projects = [
   {
     id: "travel-journal",
     title: "E-Travel Journal",
-    link: "https://travel.sambasivareddy.in/",
     gitlink: "https://github.com/samsiva-dev/traveller",
     description:
       "A Web application to keep the track/journal of the trips you went till now and plans for the upcoming trips. It also visualize the trips you want in the map",
@@ -43,19 +43,17 @@ export const projects = [
   },
   {
     id: "dbu",
-    title: "Distributed Postgres Join Optimizer",
-    link: "https://github.com/samsiva-dev/distributed-pg-stats/releases/tag/v1.0.0",
-    gitlink: "https://github.com/samsiva-dev/distributed-pg-stats",
+    title: "Postgres Join Optimizer",
+    gitlink: "https://github.com/samsiva-dev/join-optimizer-hook",
     description:
-      "A tool to build the global NDV (Number of Distinct Values) stats, load them and use them to give the optimal join order based on the given query.",
-    tags: ["PostgreSQL", "Optimizer", "PG Extension", "Go", "Cobra", "CLI"],
+      "A PostgreSQL extension that hooks into the query planner to provide statistics-based join order optimization. It collects runtime statistics and uses them to make better join ordering decisions.",
+    tags: ["PostgreSQL", "Optimizer", "PG Extension", "C"],
     status: "Completed",
     preview: true,
   },
   {
     id: "project1",
     title: "Blog Page",
-    link: "https://blogs.sambasivareddy.in/",
     gitlink: "https://github.com/samsiva-dev/writes-by-siva",
     description:
       "This is a full-stack blogging application designed to share technical articles, coding solutions, and developer-focused blogs. It covers trending topics in software development such as MERN stack, and modern engineering practices. The blog section includes detailed posts on system design and core computer science concepts, while the coding section focuses on competitive programming with practical solutions and explanations. Each post is structured for clarity and usefulness, helping readers quickly grasp key ideas.",
@@ -185,6 +183,6 @@ export const experience = [
       "Built a query validation system to compare execution results across old and new PostgreSQL clusters and Blue-Green deployment environments, ensuring correctness during upgrades and schema evolution.",
       "Investigated and fixed distributed query performance issues including excessive memory usage from unnecessary shard execution, connection congestion during inter-node COPY operations — resolved by optimizing shard targeting and introducing SCP + LZ4-based transfer pipelines.",
     ],
-    coreSkills: ["Database Internals", "PostgreSQL", "Distributed Systems", "Query Optimization", "Python"],
+    coreSkills: ["Database Internals", "PostgreSQL", "Distributed Systems", "Query Optimization", "Python", "Java"],
   },
 ];
