@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { isValidRevealToken } from "@/app/api/admin/verify-email/route";
+
+function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!domain) return "***";
+  const visible = local.slice(0, Math.min(2, local.length));
+  return `${visible}${"*".repeat(Math.max(0, local.length - 2))}@${domain}`;
+}
 
 // GET /api/admin/comments - List all comments (admin only)
 export async function GET(request: NextRequest) {
@@ -13,6 +21,10 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status"); // "pending" | "approved" | "all"
+    const revealToken = searchParams.get("reveal");
+
+    const adminEmail = session.user?.email || "";
+    const revealed = revealToken ? isValidRevealToken(adminEmail, revealToken) : false;
 
     const where: any = {};
     if (status === "pending") where.approved = false;
@@ -26,7 +38,12 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json({ comments });
+    const maskedComments = comments.map((c) => ({
+      ...c,
+      email: revealed ? c.email : maskEmail(c.email),
+    }));
+
+    return NextResponse.json({ comments: maskedComments, revealed });
   } catch (error) {
     console.error("Error fetching comments:", error);
     return NextResponse.json({ error: "Failed to fetch comments" }, { status: 500 });

@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { isValidRevealToken } from "@/app/api/admin/verify-email/route";
+
+function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!domain) return "***";
+  const visible = local.slice(0, Math.min(2, local.length));
+  return `${visible}${"*".repeat(Math.max(0, local.length - 2))}@${domain}`;
+}
 
 // GET /api/admin/subscribers - List all subscribers
 export async function GET(request: NextRequest) {
@@ -14,6 +22,11 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status"); // "active" | "inactive" | "all"
     const format = searchParams.get("format"); // "csv" for export
+    const revealToken = searchParams.get("reveal");
+
+    // Check if admin has verified to see real emails
+    const adminEmail = session.user?.email || "";
+    const revealed = revealToken ? isValidRevealToken(adminEmail, revealToken) : false;
 
     const where: any = {};
     if (status === "active") where.active = true;
@@ -24,8 +37,14 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    // CSV export
+    // CSV export — requires reveal token
     if (format === "csv") {
+      if (!revealed) {
+        return NextResponse.json(
+          { error: "Email verification required to export subscriber data" },
+          { status: 403 }
+        );
+      }
       const csvRows = ["email,subscribed_date,status"];
       for (const sub of subscribers) {
         csvRows.push(
@@ -40,14 +59,21 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Mask emails unless verified
+    const maskedSubscribers = subscribers.map((sub) => ({
+      ...sub,
+      email: revealed ? sub.email : maskEmail(sub.email),
+    }));
+
     const counts = await Promise.all([
       prisma.subscriber.count({ where: { active: true } }),
       prisma.subscriber.count({ where: { active: false } }),
     ]);
 
     return NextResponse.json({
-      subscribers,
+      subscribers: maskedSubscribers,
       counts: { active: counts[0], inactive: counts[1], total: counts[0] + counts[1] },
+      revealed,
     });
   } catch (error) {
     console.error("Error fetching subscribers:", error);
