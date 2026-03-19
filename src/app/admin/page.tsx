@@ -14,8 +14,21 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminDashboard() {
-  const [totalPosts, publishedPosts, draftPosts, totalTags, totalSubscribers, unreadMessages, totalViewsAgg, scheduledCount, pendingComments] =
-    await Promise.all([
+  let totalPosts = 0,
+    publishedPosts = 0,
+    draftPosts = 0,
+    totalTags = 0,
+    totalSubscribers = 0,
+    unreadMessages = 0,
+    totalViews = 0,
+    scheduledCount = 0,
+    pendingComments = 0;
+
+  let recentPosts: any[] = [];
+  let dbError = false;
+
+  try {
+    const [tp, pp, dp, tt, ts, um, tva, sc, pc] = await Promise.all([
       prisma.post.count(),
       prisma.post.count({ where: { published: true } }),
       prisma.post.count({ where: { published: false } }),
@@ -26,14 +39,25 @@ export default async function AdminDashboard() {
       prisma.post.count({ where: { published: false, publishAt: { gt: new Date() } } }),
       prisma.comment.count({ where: { approved: false } }),
     ]);
+    totalPosts = tp;
+    publishedPosts = pp;
+    draftPosts = dp;
+    totalTags = tt;
+    totalSubscribers = ts;
+    unreadMessages = um;
+    totalViews = tva._sum.views || 0;
+    scheduledCount = sc;
+    pendingComments = pc;
 
-  const totalViews = totalViewsAgg._sum.views || 0;
-
-  const recentPosts = await prisma.post.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 5,
-    include: { tags: true },
-  });
+    recentPosts = await prisma.post.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      include: { tags: true },
+    });
+  } catch (error) {
+    console.error("Dashboard DB error:", error);
+    dbError = true;
+  }
 
   const stats = [
     { title: "Total Posts", value: totalPosts, icon: FileText },
@@ -49,6 +73,11 @@ export default async function AdminDashboard() {
 
   return (
     <div className="container mx-auto max-w-5xl px-4 py-16 animate-fade-in">
+      {dbError && (
+        <div className="mb-6 rounded-lg border border-yellow-300 bg-yellow-50 p-4 text-sm text-yellow-800 dark:border-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300">
+          <strong>Database connection issue:</strong> Could not reach the database. Stats may be stale. Try refreshing the page.
+        </div>
+      )}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>

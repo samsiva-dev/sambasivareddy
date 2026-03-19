@@ -29,15 +29,16 @@ async function getPost(slug: string) {
   // Auto-publish any due scheduled posts before fetching
   await publishDueScheduledPosts();
 
-  const post = await prisma.post.findUnique({
-    where: { slug, published: true },
-    include: {
-      author: { select: { name: true, image: true } },
-      tags: true,
-    },
-  });
+  try {
+    const post = await prisma.post.findUnique({
+      where: { slug, published: true },
+      include: {
+        author: { select: { name: true, image: true } },
+        tags: true,
+      },
+    });
 
-  if (!post) return null;
+    if (!post) return null;
 
   const tagIds = post.tags.map((t) => t.id);
   let relatedPosts: any[] = [];
@@ -82,6 +83,10 @@ async function getPost(slug: string) {
   }
 
   return { post, relatedPosts };
+  } catch (error) {
+    console.error("Error fetching post:", error);
+    return null;
+  }
 }
 
 export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
