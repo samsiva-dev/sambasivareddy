@@ -1,4 +1,6 @@
 import prisma from "@/lib/prisma";
+import { notifySubscribers } from "@/lib/notify-subscribers";
+import { notifyScheduledPublished } from "@/lib/notify-admin";
 
 let lastCheck = 0;
 const CHECK_INTERVAL_MS = 60_000; // at most once per minute
@@ -21,7 +23,7 @@ export async function publishDueScheduledPosts(): Promise<void> {
         published: false,
         publishAt: { not: null, lte: new Date() },
       },
-      select: { id: true },
+      select: { id: true, title: true, slug: true, excerpt: true },
     });
 
     if (duePosts.length === 0) return;
@@ -30,6 +32,18 @@ export async function publishDueScheduledPosts(): Promise<void> {
       where: { id: { in: duePosts.map((p) => p.id) } },
       data: { published: true },
     });
+
+    // Send newsletter emails to subscribers
+    for (const post of duePosts) {
+      notifySubscribers({
+        postTitle: post.title,
+        postSlug: post.slug,
+        postExcerpt: post.excerpt,
+      }).catch(console.error);
+    }
+
+    // Notify admin via Discord/Slack
+    notifyScheduledPublished(duePosts.map((p) => p.title));
   } catch (error) {
     // Silent — non-critical path; next request will retry
     console.error("Auto-publish check failed:", error);
