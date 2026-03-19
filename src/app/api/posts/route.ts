@@ -6,6 +6,7 @@ import prisma from "@/lib/prisma";
 import { postSchema } from "@/lib/validations";
 import { slugify } from "@/lib/utils";
 import { notifySubscribers } from "@/lib/notify-subscribers";
+import { sanitizeContent } from "@/lib/sanitize";
 
 // GET /api/posts - Get all posts (public: published only, admin: all)
 export async function GET(request: NextRequest) {
@@ -89,6 +90,9 @@ export async function POST(request: NextRequest) {
     }
 
     const { tags: tagNames, publishAt, ...postData } = validation.data;
+
+    // Sanitize HTML content
+    postData.content = sanitizeContent(postData.content);
 
     // Parse publishAt date
     const publishAtDate = publishAt ? new Date(publishAt) : null;

@@ -39,8 +39,17 @@ export async function POST(
     const post = await prisma.post.update({
       where: { slug },
       data: { views: { increment: 1 } },
-      select: { views: true },
+      select: { views: true, id: true },
     });
+
+    // Record daily view stat for analytics trends
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    prisma.dailyViewStat.upsert({
+      where: { postId_date: { postId: post.id, date: today } },
+      create: { postId: post.id, date: today, views: 1 },
+      update: { views: { increment: 1 } },
+    }).catch(() => {}); // fire-and-forget
 
     return NextResponse.json({ views: post.views });
   } catch (error) {

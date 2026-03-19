@@ -11,6 +11,12 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
     // Overall stats
     const [
       totalViews,
@@ -19,6 +25,8 @@ export async function GET() {
       totalSubscribers,
       subscribersThisMonth,
       totalMessages,
+      totalComments,
+      pendingComments,
     ] = await Promise.all([
       prisma.post.aggregate({ _sum: { views: true } }),
       prisma.post.count(),
@@ -33,6 +41,8 @@ export async function GET() {
         },
       }),
       prisma.contactMessage.count(),
+      prisma.comment.count({ where: { approved: true } }),
+      prisma.comment.count({ where: { approved: false } }),
     ]);
 
     // Total reactions
@@ -72,9 +82,6 @@ export async function GET() {
     });
 
     // Posts per month (last 12 months)
-    const twelveMonthsAgo = new Date();
-    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
-
     const postsOverTime = await prisma.post.findMany({
       where: {
         published: true,
@@ -84,7 +91,6 @@ export async function GET() {
       orderBy: { createdAt: "asc" },
     });
 
-    // Group posts by month
     const monthlyPosts: Record<string, number> = {};
     postsOverTime.forEach((p) => {
       const key = `${p.createdAt.getFullYear()}-${String(p.createdAt.getMonth() + 1).padStart(2, "0")}`;
@@ -114,6 +120,51 @@ export async function GET() {
       select: { id: true, title: true, slug: true, publishAt: true },
     });
 
+    // Daily view trends (last 30 days)
+    const dailyViewStats = await prisma.dailyViewStat.findMany({
+      where: { date: { gte: thirtyDaysAgo } },
+      orderBy: { date: "asc" },
+    });
+
+    const dailyViews: Record<string, number> = {};
+    dailyViewStats.forEach((stat) => {
+      const key = stat.date.toISOString().split("T")[0];
+      dailyViews[key] = (dailyViews[key] || 0) + stat.views;
+    });
+
+    // Popular tags (by total views of their posts)
+    const tagsWithViews = await prisma.tag.findMany({
+      include: {
+        posts: {
+          where: { published: true },
+          select: { views: true, likes: true },
+        },
+      },
+    });
+
+    const popularTags = tagsWithViews
+      .map((tag) => ({
+        name: tag.name,
+        slug: tag.slug,
+        postCount: tag.posts.length,
+        totalViews: tag.posts.reduce((sum, p) => sum + p.views, 0),
+        totalLikes: tag.posts.reduce((sum, p) => sum + p.likes, 0),
+      }))
+      .sort((a, b) => b.totalViews - a.totalViews)
+      .slice(0, 10);
+
+    // Monthly views trend (last 12 months)
+    const allMonthlyViewStats = await prisma.dailyViewStat.findMany({
+      where: { date: { gte: twelveMonthsAgo } },
+      select: { date: true, views: true },
+    });
+
+    const monthlyViews: Record<string, number> = {};
+    allMonthlyViewStats.forEach((stat) => {
+      const key = `${stat.date.getFullYear()}-${String(stat.date.getMonth() + 1).padStart(2, "0")}`;
+      monthlyViews[key] = (monthlyViews[key] || 0) + stat.views;
+    });
+
     return NextResponse.json({
       overview: {
         totalViews: totalViews._sum.views || 0,
@@ -123,6 +174,8 @@ export async function GET() {
         totalSubscribers,
         subscribersThisMonth,
         totalMessages,
+        totalComments,
+        pendingComments,
       },
       reactionBreakdown: {
         heart: reactions._sum.likes || 0,
@@ -134,6 +187,9 @@ export async function GET() {
       popularByViews,
       monthlyPosts,
       monthlySubscribers,
+      monthlyViews,
+      dailyViews,
+      popularTags,
       scheduledPosts,
     });
   } catch (error) {

@@ -7,6 +7,7 @@ import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { siteConfig } from "@/lib/constants";
 import { ServiceWorkerRegister } from "@/components/sw-register";
+import { CommandPalette } from "@/components/command-palette";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -78,6 +79,8 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
+        <link rel="webmention" href="/api/webmention" />
+        <link rel="me" href={siteConfig.links.github} />
         <meta name="theme-color" content="#0f172a" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -99,6 +102,7 @@ export default function RootLayout({
               <Footer />
             </div>
             <ServiceWorkerRegister />
+            <CommandPalette />
           </ThemeProvider>
         </AuthProvider>
       </body>

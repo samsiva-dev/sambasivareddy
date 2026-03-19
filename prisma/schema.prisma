@@ -82,7 +82,9 @@ model Post {
   metaDescription String?
   ogImage         String?
 
-  comments Comment[]
+  comments       Comment[]
+  dailyViewStats DailyViewStat[]
+  webmentions    Webmention[]
 
   @@index([slug])
   @@index([published])
@@ -132,4 +134,34 @@ model Comment {
   @@index([postId])
   @@index([createdAt])
   @@index([approved])
+}
+
+model DailyViewStat {
+  id     String   @id @default(cuid())
+  postId String
+  post   Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  date   DateTime @db.Date
+  views  Int      @default(0)
+
+  @@unique([postId, date])
+  @@index([date])
+}
+
+model Webmention {
+  id         String   @id @default(cuid())
+  source     String
+  target     String
+  postId     String?
+  post       Post?    @relation(fields: [postId], references: [id], onDelete: SetNull)
+  type       String   @default("mention") // mention, like, reply, repost
+  authorName String?
+  authorUrl  String?
+  content    String?  @db.Text
+  verified   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@unique([source, target])
+  @@index([postId])
+  @@index([target])
+  @@index([createdAt])
 }

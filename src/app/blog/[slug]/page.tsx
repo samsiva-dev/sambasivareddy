@@ -17,6 +17,7 @@ import { ShareButtons } from "@/components/share-buttons";
 import { BookmarkButton } from "@/components/bookmark-button";
 import { ViewTracker } from "@/components/view-tracker";
 import { CommentSection } from "@/components/comment-section";
+import { WebmentionSection } from "@/components/webmention-section";
 
 export const revalidate = 60;
 export const dynamicParams = true;
@@ -175,8 +176,8 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   return (
     <>
-      <ViewTracker slug={slug} />
-      <ReadingProgressBar />
+      <ViewTracker slug={slug} title={post.title} />
+      <ReadingProgressBar slug={slug} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -303,6 +304,9 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
             {/* Comments */}
             <CommentSection slug={slug} />
+
+            {/* Webmentions */}
+            <WebmentionSection slug={slug} />
 
             {/* Newsletter */}
             <div className="mt-16">

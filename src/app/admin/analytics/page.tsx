@@ -17,6 +17,9 @@ import {
   HandMetal,
   TrendingUp,
   Timer,
+  MessageSquare,
+  Tag,
+  BarChart3,
 } from "lucide-react";
 
 interface AnalyticsData {
@@ -28,6 +31,8 @@ interface AnalyticsData {
     totalSubscribers: number;
     subscribersThisMonth: number;
     totalMessages: number;
+    totalComments: number;
+    pendingComments: number;
   };
   reactionBreakdown: {
     heart: number;
@@ -49,6 +54,15 @@ interface AnalyticsData {
   }[];
   monthlyPosts: Record<string, number>;
   monthlySubscribers: Record<string, number>;
+  monthlyViews: Record<string, number>;
+  dailyViews: Record<string, number>;
+  popularTags: {
+    name: string;
+    slug: string;
+    postCount: number;
+    totalViews: number;
+    totalLikes: number;
+  }[];
   scheduledPosts: {
     id: string;
     title: string;
@@ -81,7 +95,7 @@ export default function AnalyticsPage() {
           <Skeleton className="h-8 w-48" />
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-          {Array.from({ length: 4 }).map((_, i) => (
+          {Array.from({ length: 8 }).map((_, i) => (
             <Skeleton key={i} className="h-24 rounded-lg" />
           ))}
         </div>
@@ -98,13 +112,27 @@ export default function AnalyticsPage() {
     );
   }
 
-  const { overview, reactionBreakdown, popularByViews, monthlyPosts, monthlySubscribers, scheduledPosts } = data;
+  const {
+    overview,
+    reactionBreakdown,
+    popularByViews,
+    monthlyPosts,
+    monthlySubscribers,
+    monthlyViews,
+    dailyViews,
+    popularTags,
+    scheduledPosts,
+  } = data;
 
   const overviewStats = [
     { label: "Total Views", value: overview.totalViews, icon: Eye },
     { label: "Total Reactions", value: overview.totalReactions, icon: Heart },
     { label: "Subscribers", value: overview.totalSubscribers, icon: Users },
     { label: "Published", value: overview.publishedPosts, icon: FileText },
+    { label: "Comments", value: overview.totalComments, icon: MessageSquare },
+    { label: "Pending Comments", value: overview.pendingComments, icon: MessageSquare },
+    { label: "New Subs (Month)", value: overview.subscribersThisMonth, icon: TrendingUp },
+    { label: "Messages", value: overview.totalMessages, icon: MessageSquare },
   ];
 
   const reactionItems = [
@@ -115,10 +143,14 @@ export default function AnalyticsPage() {
     { emoji: "👏", label: "Clap", count: reactionBreakdown.clap, icon: HandMetal },
   ];
 
-  // Build bar chart data for monthly posts
-  const allMonths = Object.keys({ ...monthlyPosts, ...monthlySubscribers }).sort();
+  // Build data for monthly activity chart
+  const allMonths = Object.keys({ ...monthlyPosts, ...monthlySubscribers, ...monthlyViews }).sort();
   const maxPosts = Math.max(...Object.values(monthlyPosts), 1);
   const maxSubs = Math.max(...Object.values(monthlySubscribers), 1);
+
+  // Daily views chart data (last 30 days)
+  const dailyViewDays = Object.keys(dailyViews).sort();
+  const maxDailyViews = Math.max(...Object.values(dailyViews), 1);
 
   return (
     <div className="container mx-auto max-w-5xl px-4 py-16 animate-fade-in">
@@ -154,6 +186,63 @@ export default function AnalyticsPage() {
           </Card>
         ))}
       </div>
+
+      {/* Daily Views Trend (last 30 days) */}
+      {dailyViewDays.length > 0 && (
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Daily Views (Last 30 Days)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-[2px] h-32">
+              {dailyViewDays.map((day) => {
+                const views = dailyViews[day] || 0;
+                const height = maxDailyViews > 0 ? (views / maxDailyViews) * 100 : 0;
+                const label = new Date(day + "T00:00:00").toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                });
+                return (
+                  <div
+                    key={day}
+                    className="flex-1 group relative"
+                    title={`${label}: ${views} views`}
+                  >
+                    <div
+                      className="bg-primary/70 hover:bg-primary rounded-t-sm transition-all w-full"
+                      style={{ height: `${Math.max(height, 2)}%` }}
+                    />
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-popover text-popover-foreground text-xs rounded px-2 py-1 shadow-md whitespace-nowrap z-10">
+                      {label}: {views}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex justify-between text-xs text-muted-foreground mt-2">
+              <span>
+                {dailyViewDays.length > 0
+                  ? new Date(dailyViewDays[0] + "T00:00:00").toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })
+                  : ""}
+              </span>
+              <span>
+                {dailyViewDays.length > 0
+                  ? new Date(dailyViewDays[dailyViewDays.length - 1] + "T00:00:00").toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })
+                  : ""}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2 mb-8">
         {/* Reaction breakdown */}
@@ -204,6 +293,7 @@ export default function AnalyticsPage() {
                 {allMonths.slice(-6).map((month) => {
                   const posts = monthlyPosts[month] || 0;
                   const subs = monthlySubscribers[month] || 0;
+                  const views = monthlyViews[month] || 0;
                   const [y, m] = month.split("-");
                   const label = new Date(Number(y), Number(m) - 1).toLocaleDateString(
                     "en-US",
@@ -214,19 +304,27 @@ export default function AnalyticsPage() {
                       <div className="flex items-center justify-between text-sm mb-1">
                         <span className="text-muted-foreground">{label}</span>
                         <span className="text-xs">
-                          {posts} post{posts !== 1 ? "s" : ""} · {subs} sub{subs !== 1 ? "s" : ""}
+                          {posts} post{posts !== 1 ? "s" : ""} · {subs} sub{subs !== 1 ? "s" : ""} · {views} view{views !== 1 ? "s" : ""}
                         </span>
                       </div>
                       <div className="flex gap-1 h-3">
                         <div
                           className="bg-primary/70 rounded-sm transition-all"
-                          style={{ width: `${(posts / maxPosts) * 60}%`, minWidth: posts > 0 ? "4px" : "0" }}
+                          style={{ width: `${(posts / maxPosts) * 40}%`, minWidth: posts > 0 ? "4px" : "0" }}
                           title={`${posts} posts`}
                         />
                         <div
                           className="bg-blue-400/70 rounded-sm transition-all"
-                          style={{ width: `${(subs / maxSubs) * 40}%`, minWidth: subs > 0 ? "4px" : "0" }}
+                          style={{ width: `${(subs / maxSubs) * 30}%`, minWidth: subs > 0 ? "4px" : "0" }}
                           title={`${subs} subscribers`}
+                        />
+                        <div
+                          className="bg-green-400/70 rounded-sm transition-all"
+                          style={{
+                            width: `${(views / Math.max(...Object.values(monthlyViews), 1)) * 30}%`,
+                            minWidth: views > 0 ? "4px" : "0",
+                          }}
+                          title={`${views} views`}
                         />
                       </div>
                     </div>
@@ -239,12 +337,50 @@ export default function AnalyticsPage() {
                   <span className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-sm bg-blue-400/70" /> Subscribers
                   </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-sm bg-green-400/70" /> Views
+                  </span>
                 </div>
               </div>
             )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Popular Tags */}
+      {popularTags.length > 0 && (
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Tag className="h-5 w-5" />
+              Popular Tags
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {popularTags.map((tag) => (
+                <div
+                  key={tag.slug}
+                  className="flex items-center justify-between rounded-lg border p-3"
+                >
+                  <div>
+                    <span className="font-medium">{tag.name}</span>
+                    <p className="text-xs text-muted-foreground">
+                      {tag.postCount} post{tag.postCount !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                  <div className="text-right text-sm">
+                    <p className="tabular-nums">{tag.totalViews.toLocaleString()} views</p>
+                    <p className="text-xs text-muted-foreground tabular-nums">
+                      {tag.totalLikes} likes
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Popular posts */}
       <Card className="mb-8">

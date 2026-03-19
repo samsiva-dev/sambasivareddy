@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Search } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { siteConfig } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,12 @@ import { Button } from "@/components/ui/button";
 export function Navbar() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const openCommandPalette = () => {
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true })
+    );
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -39,6 +45,14 @@ export function Navbar() {
               {link.title}
             </Link>
           ))}
+          <button
+            onClick={openCommandPalette}
+            className="ml-1 flex items-center gap-2 rounded-md border bg-muted/50 px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+            title="Search (⌘K)"
+          >
+            <Search className="h-3.5 w-3.5" />
+            <kbd className="hidden lg:inline text-[10px]">⌘K</kbd>
+          </button>
           <ThemeToggle />
         </div>
 

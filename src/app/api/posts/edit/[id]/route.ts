@@ -6,6 +6,7 @@ import prisma from "@/lib/prisma";
 import { postSchema } from "@/lib/validations";
 import { slugify } from "@/lib/utils";
 import { notifySubscribers } from "@/lib/notify-subscribers";
+import { sanitizeContent } from "@/lib/sanitize";
 
 // PUT /api/posts/edit/[id] - Update a post (admin only)
 export async function PUT(
@@ -31,6 +32,9 @@ export async function PUT(
     }
 
     const { tags: tagNames, publishAt, ...postData } = validation.data;
+
+    // Sanitize HTML content
+    postData.content = sanitizeContent(postData.content);
 
     const publishAtDate = publishAt ? new Date(publishAt) : null;
 
