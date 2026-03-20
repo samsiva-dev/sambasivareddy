@@ -20,12 +20,12 @@ export default function ResumePage() {
             <p className="text-lg text-muted-foreground">{siteConfig.author.title}</p>
             <p className="text-sm text-muted-foreground mt-1">{siteConfig.author.location}</p>
           </div>
-          <Button variant="outline" asChild>
+          {/* <Button variant="outline" asChild>
             <Link href="/resume.pdf" target="_blank">
               <Download className="mr-2 h-4 w-4" />
               Download PDF
             </Link>
-          </Button>
+          </Button> */}
         </div>
 
         {/* Summary */}
