@@ -48,6 +48,36 @@ import { useCallback, useRef, useState } from "react";
 
 const lowlight = createLowlight(common);
 
+const CODE_LANGUAGES = [
+  { value: "", label: "Auto" },
+  { value: "javascript", label: "JavaScript" },
+  { value: "typescript", label: "TypeScript" },
+  { value: "python", label: "Python" },
+  { value: "java", label: "Java" },
+  { value: "csharp", label: "C#" },
+  { value: "cpp", label: "C++" },
+  { value: "c", label: "C" },
+  { value: "go", label: "Go" },
+  { value: "rust", label: "Rust" },
+  { value: "ruby", label: "Ruby" },
+  { value: "php", label: "PHP" },
+  { value: "swift", label: "Swift" },
+  { value: "kotlin", label: "Kotlin" },
+  { value: "html", label: "HTML" },
+  { value: "css", label: "CSS" },
+  { value: "scss", label: "SCSS" },
+  { value: "json", label: "JSON" },
+  { value: "yaml", label: "YAML" },
+  { value: "xml", label: "XML" },
+  { value: "sql", label: "SQL" },
+  { value: "bash", label: "Bash" },
+  { value: "shell", label: "Shell" },
+  { value: "markdown", label: "Markdown" },
+  { value: "dockerfile", label: "Dockerfile" },
+  { value: "graphql", label: "GraphQL" },
+  { value: "plaintext", label: "Plain Text" },
+];
+
 interface TipTapEditorProps {
   content: string;
   onChange: (content: string) => void;
@@ -322,13 +352,31 @@ export function TipTapEditor({ content, onChange, onImageUpload }: TipTapEditorP
         >
           <Quote className="h-4 w-4" />
         </ToolbarButton>
-        <ToolbarButton
-          active={editor.isActive("codeBlock")}
-          onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-          title="Code Block"
-        >
-          <Code className="h-4 w-4" />
-        </ToolbarButton>
+        <div className="relative flex items-center">
+          <ToolbarButton
+            active={editor.isActive("codeBlock")}
+            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+            title="Code Block"
+          >
+            <Code className="h-4 w-4" />
+          </ToolbarButton>
+          {editor.isActive("codeBlock") && (
+            <select
+              className="h-8 text-xs bg-muted border border-border rounded px-1.5 py-0 focus:outline-none focus:ring-1 focus:ring-ring"
+              value={editor.getAttributes("codeBlock").language || ""}
+              onChange={(e) =>
+                editor.chain().focus().updateAttributes("codeBlock", { language: e.target.value }).run()
+              }
+              title="Code Language"
+            >
+              {CODE_LANGUAGES.map((lang) => (
+                <option key={lang.value} value={lang.value}>
+                  {lang.label}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
         <ToolbarButton
           onClick={() => editor.chain().focus().setHorizontalRule().run()}
           title="Horizontal Rule"
