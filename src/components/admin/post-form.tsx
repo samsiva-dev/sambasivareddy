@@ -63,16 +63,52 @@ export function PostForm({ initialData }: PostFormProps) {
   const [seriesId, setSeriesId] = useState(initialData?.seriesId || "");
   const [seriesOrder, setSeriesOrder] = useState<number | "">(initialData?.seriesOrder ?? "");
   const [allSeries, setAllSeries] = useState<{ id: string; title: string }[]>([]);
+  const [showNewSeries, setShowNewSeries] = useState(false);
+  const [newSeriesTitle, setNewSeriesTitle] = useState("");
+  const [newSeriesDesc, setNewSeriesDesc] = useState("");
+  const [creatingSeries, setCreatingSeries] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
   // Fetch series list
-  useState(() => {
+  const fetchSeries = useCallback(() => {
     fetch("/api/admin/series")
       .then((r) => r.ok ? r.json() : { series: [] })
       .then((data) => setAllSeries(data.series || []))
       .catch(() => {});
+  }, []);
+
+  useState(() => {
+    fetchSeries();
   });
+
+  const handleCreateSeries = async () => {
+    if (!newSeriesTitle.trim()) return;
+    setCreatingSeries(true);
+    try {
+      const res = await fetch("/api/admin/series", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newSeriesTitle.trim(), description: newSeriesDesc.trim() }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || "Failed to create series");
+        return;
+      }
+      const { series } = await res.json();
+      fetchSeries();
+      setSeriesId(series.id);
+      setNewSeriesTitle("");
+      setNewSeriesDesc("");
+      setShowNewSeries(false);
+    } catch {
+      alert("Failed to create series");
+    } finally {
+      setCreatingSeries(false);
+    }
+  };
+
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -457,7 +493,48 @@ export function PostForm({ initialData }: PostFormProps) {
 
             {/* Series */}
             <div className="rounded-lg border p-4 space-y-3">
-              <h3 className="font-semibold">Series</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold">Series</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowNewSeries(!showNewSeries)}
+                  className="text-xs text-primary hover:underline"
+                >
+                  {showNewSeries ? "Cancel" : "+ New Series"}
+                </button>
+              </div>
+
+              {showNewSeries && (
+                <div className="space-y-2 rounded-md border border-dashed p-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="newSeriesTitle">Title</Label>
+                    <Input
+                      id="newSeriesTitle"
+                      placeholder="e.g. Building a Blog with Next.js"
+                      value={newSeriesTitle}
+                      onChange={(e) => setNewSeriesTitle(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="newSeriesDesc">Description (optional)</Label>
+                    <Input
+                      id="newSeriesDesc"
+                      placeholder="A short description of the series"
+                      value={newSeriesDesc}
+                      onChange={(e) => setNewSeriesDesc(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleCreateSeries}
+                    disabled={creatingSeries || !newSeriesTitle.trim()}
+                  >
+                    {creatingSeries ? "Creating..." : "Create Series"}
+                  </Button>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="seriesId">Series</Label>
                 <select
