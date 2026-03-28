@@ -91,12 +91,13 @@ export function PostForm({ initialData }: PostFormProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: newSeriesTitle.trim(), description: newSeriesDesc.trim() }),
       });
-      if (!res.ok) {
-        const data = await res.json();
+      const data = await res.json();
+      if (!res.ok && res.status !== 409) {
         alert(data.error || "Failed to create series");
         return;
       }
-      const { series } = await res.json();
+      // If 409 (already exists), the API returns the existing series
+      const series = data.series || data;
       fetchSeries();
       setSeriesId(series.id);
       setNewSeriesTitle("");
@@ -187,6 +188,10 @@ export function PostForm({ initialData }: PostFormProps) {
   }, [initialData?.id, slug]);
 
   const handleSave = async (asDraft = false) => {
+    if (tags.length === 0) {
+      alert("Please select at least one category tag (Personal or Technical).");
+      return;
+    }
     setSaving(true);
     try {
       // Convert datetime-local value to a full ISO string with timezone
@@ -414,7 +419,30 @@ export function PostForm({ initialData }: PostFormProps) {
 
             {/* Tags */}
             <div className="rounded-lg border p-4 space-y-2">
-              <Label>Tags</Label>
+              <Label>Tags <span className="text-destructive">*</span></Label>
+              <div className="flex gap-2 mb-2">
+                {["Personal", "Technical"].map((cat) => {
+                  const selected = tags.includes(cat);
+                  return (
+                    <Button
+                      key={cat}
+                      type="button"
+                      variant={selected ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        if (selected) {
+                          setTags(tags.filter((t) => t !== cat));
+                        } else {
+                          if (!tags.includes(cat)) setTags([...tags, cat]);
+                        }
+                      }}
+                    >
+                      {selected && "✓ "}{cat}
+                    </Button>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground">Select Personal or Technical, then add more tags below.</p>
               <div className="flex gap-2">
                 <Input
                   placeholder="Add tag..."

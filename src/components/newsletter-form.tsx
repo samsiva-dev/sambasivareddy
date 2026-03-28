@@ -20,8 +20,8 @@ export function NewsletterForm() {
 
   useEffect(() => {
     fetch("/api/tags")
-      .then((r) => r.ok ? r.json() : { tags: [] })
-      .then((data) => setTags(data.tags || []))
+      .then((r) => r.ok ? r.json() : [])
+      .then((data) => setTags(Array.isArray(data) ? data : data.tags || []))
       .catch(() => {});
   }, []);
 
@@ -70,19 +70,32 @@ export function NewsletterForm() {
       </p>
       {tags.length > 0 && (
         <div className="mt-3">
-          <p className="text-xs text-muted-foreground mb-2">Interested in (optional):</p>
+          <p className="text-xs font-medium text-muted-foreground mb-2">
+            Select categories you&apos;re interested in:
+          </p>
           <div className="flex flex-wrap gap-1.5">
-            {tags.map((tag) => (
-              <Badge
-                key={tag.id}
-                variant={selectedInterests.includes(tag.slug) ? "default" : "outline"}
-                className="cursor-pointer text-xs"
-                onClick={() => toggleInterest(tag.slug)}
-              >
-                {tag.name}
-              </Badge>
-            ))}
+            {tags.map((tag) => {
+              const selected = selectedInterests.includes(tag.slug);
+              return (
+                <Badge
+                  key={tag.id}
+                  variant={selected ? "default" : "outline"}
+                  className={`cursor-pointer text-xs transition-colors ${
+                    selected ? "" : "hover:bg-accent"
+                  }`}
+                  onClick={() => toggleInterest(tag.slug)}
+                >
+                  {selected && <span className="mr-1">✓</span>}
+                  {tag.name}
+                </Badge>
+              );
+            })}
           </div>
+          {selectedInterests.length > 0 && (
+            <p className="text-xs text-muted-foreground mt-1.5">
+              {selectedInterests.length} selected — you&apos;ll only get emails about these topics
+            </p>
+          )}
         </div>
       )}
       <form onSubmit={handleSubmit} className="mt-4 flex gap-2">

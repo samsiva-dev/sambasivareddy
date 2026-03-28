@@ -49,7 +49,10 @@ export async function POST(request: NextRequest) {
 
     const existing = await prisma.series.findUnique({ where: { slug } });
     if (existing) {
-      return NextResponse.json({ error: "A series with this title already exists" }, { status: 409 });
+      return NextResponse.json(
+        { error: "A series with this title already exists", series: existing },
+        { status: 409 }
+      );
     }
 
     const series = await prisma.series.create({
