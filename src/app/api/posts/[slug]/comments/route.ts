@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { commentSchema } from "@/lib/validations";
 import { rateLimit } from "@/lib/rate-limit";
 import { notifyNewComment } from "@/lib/notify-admin";
+import { validateCsrfToken } from "@/lib/csrf";
 
 // GET /api/posts/[slug]/comments - Get approved comments for a post
 export async function GET(
@@ -22,9 +23,9 @@ export async function GET(
     }
 
     const comments = await prisma.comment.findMany({
-      where: { postId: post.id, approved: true },
-      select: { id: true, name: true, content: true, createdAt: true },
-      orderBy: { createdAt: "desc" },
+      where: { postId: post.id, approved: true, deletedAt: null },
+      select: { id: true, name: true, content: true, createdAt: true, parentId: true },
+      orderBy: { createdAt: "asc" },
     });
 
     return NextResponse.json({ comments });
@@ -55,6 +56,12 @@ export async function POST(
     }
 
     const body = await request.json();
+
+    const csrfToken = body.csrfToken || request.headers.get("x-csrf-token");
+    if (!await validateCsrfToken(csrfToken)) {
+      return NextResponse.json({ error: "Invalid or expired CSRF token" }, { status: 403 });
+    }
+
     const validation = commentSchema.safeParse({ ...body, postId: post.id });
 
     if (!validation.success) {
@@ -64,10 +71,21 @@ export async function POST(
       );
     }
 
-    const { name, email, content } = validation.data;
+    const { name, email, content, parentId } = validation.data;
+
+    // If parentId is provided, validate it exists
+    if (parentId) {
+      const parentComment = await prisma.comment.findUnique({
+        where: { id: parentId },
+        select: { id: true, postId: true },
+      });
+      if (!parentComment || parentComment.postId !== post.id) {
+        return NextResponse.json({ error: "Parent comment not found" }, { status: 400 });
+      }
+    }
 
     await prisma.comment.create({
-      data: { postId: post.id, name, email, content },
+      data: { postId: post.id, name, email, content, parentId: parentId || null },
     });
 
     // Notify admin via Discord/Slack (fire-and-forget)

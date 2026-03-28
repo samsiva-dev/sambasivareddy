@@ -69,6 +69,13 @@ interface AnalyticsData {
     slug: string;
     publishAt: string;
   }[];
+  readingAnalytics: {
+    avgTimeOnPage: number;
+    avgScrollDepth: number;
+    bounceRate: number;
+    completionRate: number;
+    totalReads: number;
+  };
 }
 
 export default function AnalyticsPage() {
@@ -122,6 +129,7 @@ export default function AnalyticsPage() {
     dailyViews,
     popularTags,
     scheduledPosts,
+    readingAnalytics,
   } = data;
 
   const overviewStats = [
@@ -346,6 +354,44 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Reading Analytics */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Timer className="h-5 w-5" />
+            Reading Analytics (Last 30 Days)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="text-center p-3 rounded-lg border">
+              <p className="text-2xl font-bold">{readingAnalytics.totalReads.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground">Total Reads</p>
+            </div>
+            <div className="text-center p-3 rounded-lg border">
+              <p className="text-2xl font-bold">
+                {readingAnalytics.avgTimeOnPage > 60
+                  ? `${Math.floor(readingAnalytics.avgTimeOnPage / 60)}m ${readingAnalytics.avgTimeOnPage % 60}s`
+                  : `${readingAnalytics.avgTimeOnPage}s`}
+              </p>
+              <p className="text-xs text-muted-foreground">Avg. Time on Page</p>
+            </div>
+            <div className="text-center p-3 rounded-lg border">
+              <p className="text-2xl font-bold">{readingAnalytics.avgScrollDepth}%</p>
+              <p className="text-xs text-muted-foreground">Avg. Scroll Depth</p>
+            </div>
+            <div className="text-center p-3 rounded-lg border">
+              <p className="text-2xl font-bold">{readingAnalytics.completionRate}%</p>
+              <p className="text-xs text-muted-foreground">Completion Rate</p>
+            </div>
+            <div className="text-center p-3 rounded-lg border">
+              <p className="text-2xl font-bold">{readingAnalytics.bounceRate}%</p>
+              <p className="text-xs text-muted-foreground">Bounce Rate</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Popular Tags */}
       {popularTags.length > 0 && (

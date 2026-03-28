@@ -58,15 +58,23 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id, approved } = await request.json();
+    const { id, approved, restore } = await request.json();
 
-    if (!id || typeof approved !== "boolean") {
+    if (!id) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    }
+
+    const data: any = {};
+    if (typeof approved === "boolean") data.approved = approved;
+    if (restore === true) data.deletedAt = null;
+
+    if (Object.keys(data).length === 0) {
+      return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
     }
 
     const comment = await prisma.comment.update({
       where: { id },
-      data: { approved },
+      data,
     });
 
     return NextResponse.json({ comment });
@@ -91,7 +99,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Comment ID required" }, { status: 400 });
     }
 
-    await prisma.comment.delete({ where: { id } });
+    await prisma.comment.update({ where: { id }, data: { deletedAt: new Date() } });
 
     return NextResponse.json({ message: "Comment deleted" });
   } catch (error) {

@@ -39,6 +39,9 @@ export default async function EditPostPage({ params }: EditPostPageProps) {
         metaTitle: post.metaTitle || "",
         metaDescription: post.metaDescription || "",
         ogImage: post.ogImage || "",
+        canonicalUrl: post.canonicalUrl || "",
+        seriesId: post.seriesId || "",
+        seriesOrder: post.seriesOrder ?? undefined,
       }}
     />
   );

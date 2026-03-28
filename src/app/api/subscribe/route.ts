@@ -6,6 +6,7 @@ import { welcomeEmailHtml, welcomeEmailText } from "@/lib/email-templates";
 import { absoluteUrl } from "@/lib/utils";
 import { rateLimit } from "@/lib/rate-limit";
 import { notifyNewSubscriber } from "@/lib/notify-admin";
+import { validateCsrfToken } from "@/lib/csrf";
 
 export async function POST(request: NextRequest) {
   const limited = rateLimit(request, { limit: 5, windowSeconds: 300 });
@@ -13,6 +14,11 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
+
+    const csrfToken = body.csrfToken || request.headers.get("x-csrf-token");
+    if (!await validateCsrfToken(csrfToken)) {
+      return NextResponse.json({ error: "Invalid or expired CSRF token" }, { status: 403 });
+    }
     const validation = subscriberSchema.safeParse(body);
 
     if (!validation.success) {
@@ -22,18 +28,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email } = validation.data;
+    const { email, interests } = validation.data;
 
     // Check if already subscribed
     const existing = await prisma.subscriber.findUnique({ where: { email } });
     if (existing) {
       if (existing.active) {
+        // Update interests even if already subscribed
+        if (interests.length > 0) {
+          await prisma.subscriber.update({
+            where: { email },
+            data: { interests },
+          });
+        }
         return NextResponse.json({ error: "Already subscribed" }, { status: 409 });
       }
       // Reactivate
       await prisma.subscriber.update({
         where: { email },
-        data: { active: true },
+        data: { active: true, interests },
       });
 
       // Send welcome-back email
@@ -56,7 +69,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "Subscription reactivated" });
     }
 
-    const subscriber = await prisma.subscriber.create({ data: { email } });
+    const subscriber = await prisma.subscriber.create({ data: { email, interests } });
 
     // Send welcome email in the background
     if (resend) {

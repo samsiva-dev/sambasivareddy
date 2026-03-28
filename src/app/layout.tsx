@@ -8,6 +8,7 @@ import { Footer } from "@/components/footer";
 import { siteConfig } from "@/lib/constants";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { CommandPalette } from "@/components/command-palette";
+import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -103,6 +104,7 @@ export default function RootLayout({
             </div>
             <ServiceWorkerRegister />
             <CommandPalette />
+            <KeyboardShortcuts />
           </ThemeProvider>
         </AuthProvider>
       </body>

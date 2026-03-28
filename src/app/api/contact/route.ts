@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { contactSchema } from "@/lib/validations";
 import { rateLimit } from "@/lib/rate-limit";
 import { notifyContactMessage } from "@/lib/notify-admin";
+import { validateCsrfToken } from "@/lib/csrf";
 
 export async function POST(request: NextRequest) {
   const limited = rateLimit(request, { limit: 5, windowSeconds: 300 });
@@ -10,6 +11,11 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
+
+    const csrfToken = body.csrfToken || request.headers.get("x-csrf-token");
+    if (!await validateCsrfToken(csrfToken)) {
+      return NextResponse.json({ error: "Invalid or expired CSRF token" }, { status: 403 });
+    }
     const validation = contactSchema.safeParse(body);
 
     if (!validation.success) {

@@ -32,10 +32,19 @@ async function getPost(slug: string) {
 
   try {
     const post = await prisma.post.findUnique({
-      where: { slug, published: true },
+      where: { slug, published: true, deletedAt: null },
       include: {
         author: { select: { name: true, image: true } },
         tags: true,
+        series: {
+          include: {
+            posts: {
+              where: { published: true, deletedAt: null },
+              select: { id: true, title: true, slug: true, seriesOrder: true },
+              orderBy: { seriesOrder: "asc" },
+            },
+          },
+        },
       },
     });
 
@@ -49,6 +58,7 @@ async function getPost(slug: string) {
     const candidates = await prisma.post.findMany({
       where: {
         published: true,
+        deletedAt: null,
         id: { not: post.id },
         tags: { some: { id: { in: tagIds } } },
       },
@@ -74,6 +84,7 @@ async function getPost(slug: string) {
     const fallback = await prisma.post.findMany({
       where: {
         published: true,
+        deletedAt: null,
         id: { notIn: excludeIds },
       },
       include: { tags: true },
@@ -122,7 +133,7 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
       images: post.ogImage ? [post.ogImage] : undefined,
     },
     alternates: {
-      canonical: absoluteUrl(`/blog/${post.slug}`),
+      canonical: post.canonicalUrl || absoluteUrl(`/blog/${post.slug}`),
     },
   };
 }
@@ -150,6 +161,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   }
 
   const { post, relatedPosts } = data;
+  const totalWords = post.content.replace(/<[^>]*>/g, "").split(/\s+/).length;
 
   // JSON-LD structured data
   const jsonLd = {
@@ -177,7 +189,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   return (
     <>
       <ViewTracker slug={slug} title={post.title} />
-      <ReadingProgressBar slug={slug} />
+      <ReadingProgressBar slug={slug} totalWords={totalWords} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -242,6 +254,29 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                   className="w-full h-auto object-cover"
                   loading="lazy"
                 />
+              </div>
+            )}
+
+            {/* Series Navigation */}
+            {post.series && post.series.posts.length > 1 && (
+              <div className="mb-8 rounded-lg border bg-muted/30 p-4">
+                <h3 className="text-sm font-semibold mb-2">
+                  Series: {post.series.title}
+                </h3>
+                <ol className="space-y-1 text-sm">
+                  {post.series.posts.map((sp, i) => (
+                    <li key={sp.id} className="flex items-center gap-2">
+                      <span className="text-muted-foreground w-6 text-right">{sp.seriesOrder ?? i + 1}.</span>
+                      {sp.slug === slug ? (
+                        <span className="font-medium text-primary">{sp.title}</span>
+                      ) : (
+                        <Link href={`/blog/${sp.slug}`} className="hover:text-primary transition-colors">
+                          {sp.title}
+                        </Link>
+                      )}
+                    </li>
+                  ))}
+                </ol>
               </div>
             )}
 

@@ -21,6 +21,10 @@ export default function ContactPage() {
     const formData = new FormData(form);
 
     try {
+      // Fetch CSRF token
+      const csrfRes = await fetch("/api/csrf");
+      const { token: csrfToken } = await csrfRes.json();
+
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -29,6 +33,7 @@ export default function ContactPage() {
           email: formData.get("email"),
           subject: formData.get("subject"),
           message: formData.get("message"),
+          csrfToken,
         }),
       });
 

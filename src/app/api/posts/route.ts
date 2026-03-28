@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { tags: tagNames, publishAt, ...postData } = validation.data;
+    const { tags: tagNames, publishAt, seriesId, seriesOrder, ...postData } = validation.data;
 
     // Sanitize HTML content
     postData.content = sanitizeContent(postData.content);
@@ -134,9 +134,12 @@ export async function POST(request: NextRequest) {
         ...postData,
         coverImage: postData.coverImage || null,
         ogImage: postData.ogImage || null,
+        canonicalUrl: postData.canonicalUrl || null,
         publishAt: publishAtDate,
         authorId: (session.user as any).id,
         tags: { connect: tagConnections },
+        seriesId: seriesId || null,
+        seriesOrder: seriesOrder ?? null,
       },
       include: {
         author: { select: { name: true, image: true } },

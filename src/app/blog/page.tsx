@@ -1,14 +1,11 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { NewsletterForm } from "@/components/newsletter-form";
 import { siteConfig } from "@/lib/constants";
-import { formatDate, calculateReadingTime } from "@/lib/utils";
 import prisma from "@/lib/prisma";
-import { Clock, Search } from "lucide-react";
 import { BlogSearch } from "@/components/blog-search";
+import { BlogPostList } from "@/components/blog-post-list";
 import { publishDueScheduledPosts } from "@/lib/publish-scheduled";
 
 export const revalidate = 60;
@@ -30,7 +27,7 @@ async function getPosts(page: number, tag?: string, search?: string) {
   const limit = 10;
   const skip = (page - 1) * limit;
 
-  const where: any = { published: true };
+  const where: any = { published: true, deletedAt: null };
 
   if (tag) {
     where.tags = { some: { slug: tag } };
@@ -50,6 +47,7 @@ async function getPosts(page: number, tag?: string, search?: string) {
         include: {
           author: { select: { name: true, image: true } },
           tags: true,
+          series: { select: { title: true, slug: true } },
         },
         orderBy: { createdAt: "desc" },
         skip,
@@ -119,75 +117,13 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
         </div>
       )}
 
-      {/* Posts */}
-      {posts.length === 0 ? (
-        <div className="text-center py-16">
-          <p className="text-muted-foreground">
-            {search ? `No posts found for "${search}"` : "No posts yet. Check back soon!"}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-8">
-          {posts.map((post) => (
-            <article key={post.id}>
-              <Link href={`/blog/${post.slug}`} className="group block">
-                <Card className="hover:shadow-md transition-all border-transparent hover:border-border">
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                      <time>{formatDate(post.createdAt)}</time>
-                      <span>·</span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {calculateReadingTime(post.content)}
-                      </span>
-                    </div>
-                    <h2 className="text-xl font-semibold group-hover:text-primary transition-colors mb-2">
-                      {post.title}
-                    </h2>
-                    {post.excerpt && (
-                      <p className="text-muted-foreground line-clamp-2">{post.excerpt}</p>
-                    )}
-                    {post.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {post.tags.map((t) => (
-                          <Badge key={t.id} variant="secondary" className="text-xs">
-                            {t.name}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </Link>
-            </article>
-          ))}
-        </div>
-      )}
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-12">
-          {page > 1 && (
-            <Link
-              href={`/blog?page=${page - 1}${tag ? `&tag=${tag}` : ""}${search ? `&search=${search}` : ""}`}
-              className="px-4 py-2 text-sm border rounded-md hover:bg-accent transition-colors"
-            >
-              Previous
-            </Link>
-          )}
-          <span className="px-4 py-2 text-sm text-muted-foreground">
-            Page {page} of {totalPages}
-          </span>
-          {page < totalPages && (
-            <Link
-              href={`/blog?page=${page + 1}${tag ? `&tag=${tag}` : ""}${search ? `&search=${search}` : ""}`}
-              className="px-4 py-2 text-sm border rounded-md hover:bg-accent transition-colors"
-            >
-              Next
-            </Link>
-          )}
-        </div>
-      )}
+      {/* Posts — infinite scroll */}
+      <BlogPostList
+        initialPosts={JSON.parse(JSON.stringify(posts))}
+        initialTotal={total}
+        tag={tag}
+        search={search}
+      />
 
       {/* Newsletter */}
       <div className="mt-16">

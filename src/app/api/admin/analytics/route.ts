@@ -165,6 +165,33 @@ export async function GET() {
       monthlyViews[key] = (monthlyViews[key] || 0) + stat.views;
     });
 
+    // Reading analytics (last 30 days aggregate)
+    const readingStats = await prisma.readingStat.findMany({
+      where: { date: { gte: thirtyDaysAgo } },
+    });
+
+    let totalReadTime = 0;
+    let totalScrollDepth = 0;
+    let totalBounces = 0;
+    let totalCompletions = 0;
+    let totalReadEntries = 0;
+
+    readingStats.forEach((stat) => {
+      totalReadTime += stat.avgTimeOnPage * stat.totalReads;
+      totalScrollDepth += stat.avgScrollDepth * stat.totalReads;
+      totalBounces += stat.bounces;
+      totalCompletions += stat.completions;
+      totalReadEntries += stat.totalReads;
+    });
+
+    const readingAnalytics = {
+      avgTimeOnPage: totalReadEntries > 0 ? Math.round(totalReadTime / totalReadEntries) : 0,
+      avgScrollDepth: totalReadEntries > 0 ? Math.round(totalScrollDepth / totalReadEntries) : 0,
+      bounceRate: totalReadEntries > 0 ? Math.round((totalBounces / totalReadEntries) * 100) : 0,
+      completionRate: totalReadEntries > 0 ? Math.round((totalCompletions / totalReadEntries) * 100) : 0,
+      totalReads: totalReadEntries,
+    };
+
     return NextResponse.json({
       overview: {
         totalViews: totalViews._sum.views || 0,
@@ -191,6 +218,7 @@ export async function GET() {
       dailyViews,
       popularTags,
       scheduledPosts,
+      readingAnalytics,
     });
   } catch (error) {
     console.error("Analytics error:", error);

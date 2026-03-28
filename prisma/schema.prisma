@@ -66,6 +66,7 @@ model Post {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   publishAt  DateTime? // scheduled publishing — null = immediate
+  deletedAt  DateTime? // soft delete
   authorId   String
   author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   tags       Tag[]    @relation("PostTags")
@@ -81,15 +82,36 @@ model Post {
   metaTitle       String?
   metaDescription String?
   ogImage         String?
+  canonicalUrl    String? // canonical URL for cross-posted articles
+
+  // Series support
+  seriesId    String?
+  series      Series?  @relation(fields: [seriesId], references: [id])
+  seriesOrder Int?     // order within the series
 
   comments       Comment[]
   dailyViewStats DailyViewStat[]
   webmentions    Webmention[]
+  readingStats   ReadingStat[]
 
   @@index([slug])
   @@index([published])
   @@index([createdAt])
   @@index([publishAt])
+  @@index([deletedAt])
+  @@index([seriesId])
+}
+
+model Series {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String?  @db.Text
+  posts       Post[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([slug])
 }
 
 model Tag {
@@ -106,6 +128,7 @@ model Subscriber {
   email     String   @unique
   createdAt DateTime @default(now())
   active    Boolean  @default(true)
+  interests String[] @default([]) // tag slugs the subscriber is interested in
 }
 
 model ContactMessage {
@@ -125,13 +148,18 @@ model Comment {
   id        String   @id @default(cuid())
   postId    String
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  parentId  String?  // for threaded replies
+  parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("CommentReplies")
   name      String
   email     String
   content   String   @db.Text
   approved  Boolean  @default(false)
   createdAt DateTime @default(now())
+  deletedAt DateTime? // soft delete
 
   @@index([postId])
+  @@index([parentId])
   @@index([createdAt])
   @@index([approved])
 }
@@ -164,4 +192,30 @@ model Webmention {
   @@index([postId])
   @@index([target])
   @@index([createdAt])
+}
+
+model ReadingStat {
+  id          String   @id @default(cuid())
+  postId      String
+  post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  date        DateTime @db.Date
+  avgScrollDepth Float  @default(0) // 0-100 percentage
+  avgTimeOnPage  Int    @default(0) // seconds
+  bounces     Int      @default(0)
+  completions Int      @default(0) // users who scrolled to 90%+
+  totalReads  Int      @default(0)
+
+  @@unique([postId, date])
+  @@index([date])
+  @@index([postId])
+}
+
+model CsrfToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([token])
+  @@index([expiresAt])
 }

@@ -28,6 +28,9 @@ interface PostFormProps {
     metaTitle: string;
     metaDescription: string;
     ogImage: string;
+    canonicalUrl?: string;
+    seriesId?: string;
+    seriesOrder?: number;
   };
 }
 
@@ -56,8 +59,20 @@ export function PostForm({ initialData }: PostFormProps) {
     const pad = (n: number) => n.toString().padStart(2, "0");
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   });
+  const [canonicalUrl, setCanonicalUrl] = useState(initialData?.canonicalUrl || "");
+  const [seriesId, setSeriesId] = useState(initialData?.seriesId || "");
+  const [seriesOrder, setSeriesOrder] = useState<number | "">(initialData?.seriesOrder ?? "");
+  const [allSeries, setAllSeries] = useState<{ id: string; title: string }[]>([]);
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+
+  // Fetch series list
+  useState(() => {
+    fetch("/api/admin/series")
+      .then((r) => r.ok ? r.json() : { series: [] })
+      .then((data) => setAllSeries(data.series || []))
+      .catch(() => {});
+  });
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -156,6 +171,9 @@ export function PostForm({ initialData }: PostFormProps) {
         metaTitle,
         metaDescription,
         ogImage,
+        canonicalUrl: canonicalUrl || undefined,
+        seriesId: seriesId || undefined,
+        seriesOrder: seriesOrder !== "" ? Number(seriesOrder) : undefined,
       };
 
       const url = isEditing ? `/api/posts/edit/${initialData!.id}` : "/api/posts";
@@ -425,6 +443,48 @@ export function PostForm({ initialData }: PostFormProps) {
                   onChange={(e) => setOgImage(e.target.value)}
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="canonicalUrl">Canonical URL</Label>
+                <Input
+                  id="canonicalUrl"
+                  placeholder="https://medium.com/... (for cross-posted articles)"
+                  value={canonicalUrl}
+                  onChange={(e) => setCanonicalUrl(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">Set if this post was originally published elsewhere</p>
+              </div>
+            </div>
+
+            {/* Series */}
+            <div className="rounded-lg border p-4 space-y-3">
+              <h3 className="font-semibold">Series</h3>
+              <div className="space-y-2">
+                <Label htmlFor="seriesId">Series</Label>
+                <select
+                  id="seriesId"
+                  value={seriesId}
+                  onChange={(e) => setSeriesId(e.target.value)}
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <option value="">No series</option>
+                  {allSeries.map((s) => (
+                    <option key={s.id} value={s.id}>{s.title}</option>
+                  ))}
+                </select>
+              </div>
+              {seriesId && (
+                <div className="space-y-2">
+                  <Label htmlFor="seriesOrder">Order in Series</Label>
+                  <Input
+                    id="seriesOrder"
+                    type="number"
+                    min={1}
+                    placeholder="1"
+                    value={seriesOrder}
+                    onChange={(e) => setSeriesOrder(e.target.value ? parseInt(e.target.value) : "")}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>

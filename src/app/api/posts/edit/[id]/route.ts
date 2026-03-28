@@ -31,7 +31,7 @@ export async function PUT(
       );
     }
 
-    const { tags: tagNames, publishAt, ...postData } = validation.data;
+    const { tags: tagNames, publishAt, seriesId, seriesOrder, ...postData } = validation.data;
 
     // Sanitize HTML content
     postData.content = sanitizeContent(postData.content);
@@ -67,7 +67,10 @@ export async function PUT(
         ...postData,
         coverImage: postData.coverImage || null,
         ogImage: postData.ogImage || null,
+        canonicalUrl: postData.canonicalUrl || null,
         publishAt: publishAtDate,
+        seriesId: seriesId || null,
+        seriesOrder: seriesOrder ?? null,
         tags: {
           set: [],
           connect: tagConnections,
@@ -121,7 +124,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
-    await prisma.post.delete({ where: { id } });
+    await prisma.post.update({ where: { id }, data: { deletedAt: new Date() } });
 
     revalidatePath("/blog");
     revalidatePath(`/blog/${existingPost.slug}`);
@@ -130,5 +133,33 @@ export async function DELETE(
   } catch (error) {
     console.error("Error deleting post:", error);
     return NextResponse.json({ error: "Failed to delete post" }, { status: 500 });
+  }
+}
+
+// PATCH /api/posts/edit/[id] - Restore a soft-deleted post (admin only)
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || (session.user as any)?.role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await params;
+    const post = await prisma.post.findUnique({ where: { id } });
+    if (!post) {
+      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+    }
+
+    await prisma.post.update({ where: { id }, data: { deletedAt: null } });
+    revalidatePath("/blog");
+    revalidatePath(`/blog/${post.slug}`);
+
+    return NextResponse.json({ message: "Post restored successfully" });
+  } catch (error) {
+    console.error("Error restoring post:", error);
+    return NextResponse.json({ error: "Failed to restore post" }, { status: 500 });
   }
 }
