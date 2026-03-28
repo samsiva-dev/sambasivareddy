@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { writeFile, mkdir } from "fs/promises";
+import path from "path";
+import crypto from "crypto";
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,19 +31,23 @@ export async function POST(request: NextRequest) {
     const apiSecret = process.env.CLOUDINARY_API_SECRET;
 
     if (!cloudName || !apiKey || !apiSecret) {
-      // If Cloudinary is not configured, return a placeholder
+      // If Cloudinary is not configured, save locally
+      const uploadsDir = path.join(process.cwd(), "public", "uploads");
+      await mkdir(uploadsDir, { recursive: true });
+      const ext = path.extname(file.name) || ".png";
+      const uniqueName = `${Date.now()}-${crypto.randomBytes(6).toString("hex")}${ext}`;
+      const filePath = path.join(uploadsDir, uniqueName);
+      await writeFile(filePath, buffer);
       return NextResponse.json({
-        url: `https://placehold.co/800x400/1a1a2e/ffffff?text=${encodeURIComponent(file.name)}`,
-        message: "Cloudinary not configured. Using placeholder.",
+        url: `/uploads/${uniqueName}`,
       });
     }
 
     // Upload to Cloudinary
     const timestamp = Math.round(new Date().getTime() / 1000);
-    const crypto = await import("crypto");
     const signature = crypto
-      .createHash("sha256")
-      .update(`timestamp=${timestamp}${apiSecret}`)
+      .createHash("sha1")
+      .update(`folder=blog&timestamp=${timestamp}${apiSecret}`)
       .digest("hex");
 
     const cloudinaryForm = new FormData();
