@@ -25,13 +25,14 @@ export async function GET(
   }
 }
 
-// POST /api/posts/[slug]/views — increment view count (rate-limited per IP)
+// POST /api/posts/[slug]/views — increment view count
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  const limited = rateLimit(request, { limit: 5, windowSeconds: 60 });
-  if (limited) return limited;
+  // Rate limiting disabled — low traffic, uncomment when needed
+  // const limited = rateLimit(request, { limit: 100, windowSeconds: 60 });
+  // if (limited) return limited;
 
   try {
     const { slug } = await params;

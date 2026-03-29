@@ -6,8 +6,8 @@ import { notifyContactMessage } from "@/lib/notify-admin";
 import { validateCsrfToken } from "@/lib/csrf";
 
 export async function POST(request: NextRequest) {
-  const limited = rateLimit(request, { limit: 5, windowSeconds: 300 });
-  if (limited) return limited;
+  // const limited = rateLimit(request, { limit: 5, windowSeconds: 300 });
+  // if (limited) return limited;
 
   try {
     const body = await request.json();

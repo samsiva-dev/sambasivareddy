@@ -10,8 +10,8 @@ const webmentionSchema = z.object({
 
 // POST /api/webmention — receive incoming webmention
 export async function POST(request: NextRequest) {
-  const limited = rateLimit(request, { limit: 10, windowSeconds: 60 });
-  if (limited) return limited;
+  // const limited = rateLimit(request, { limit: 10, windowSeconds: 60 });
+  // if (limited) return limited;
 
   try {
     const contentType = request.headers.get("content-type") || "";

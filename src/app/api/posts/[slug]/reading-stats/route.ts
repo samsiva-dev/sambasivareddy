@@ -7,8 +7,8 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  const limited = rateLimit(request, { limit: 10, windowSeconds: 60 });
-  if (limited) return limited;
+  // const limited = rateLimit(request, { limit: 10, windowSeconds: 60 });
+  // if (limited) return limited;
 
   try {
     const { slug } = await params;

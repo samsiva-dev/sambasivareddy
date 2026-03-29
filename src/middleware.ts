@@ -12,7 +12,7 @@ export function middleware(request: NextRequest) {
     `default-src 'self'`,
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
     `style-src 'self' 'unsafe-inline'`,
-    `img-src 'self' data: blob: https://res.cloudinary.com https://avatars.githubusercontent.com https://*.r2.dev`,
+    `img-src 'self' data: blob: https:`,
     `font-src 'self'`,
     `connect-src 'self'`,
     `frame-ancestors 'none'`,
