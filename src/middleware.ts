@@ -4,13 +4,10 @@ import type { NextRequest } from "next/server";
 export function middleware(request: NextRequest) {
   const response = NextResponse.next();
 
-  // Generate a nonce for inline scripts
-  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
-
   // Content Security Policy
   const csp = [
     `default-src 'self'`,
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
+    `script-src 'self' 'unsafe-inline'`,
     `style-src 'self' 'unsafe-inline'`,
     `img-src 'self' data: blob: https:`,
     `font-src 'self'`,
@@ -27,7 +24,6 @@ export function middleware(request: NextRequest) {
     : "Content-Security-Policy-Report-Only";
 
   response.headers.set(cspHeader, csp);
-  response.headers.set("x-nonce", nonce);
 
   // Security headers
   response.headers.set("X-Content-Type-Options", "nosniff");
