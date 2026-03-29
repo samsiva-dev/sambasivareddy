@@ -145,18 +145,20 @@ model ContactMessage {
 }
 
 model Comment {
-  id        String   @id @default(cuid())
-  postId    String
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  parentId  String?  // for threaded replies
-  parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies   Comment[] @relation("CommentReplies")
-  name      String
-  email     String
-  content   String   @db.Text
-  approved  Boolean  @default(false)
-  createdAt DateTime @default(now())
-  deletedAt DateTime? // soft delete
+  id          String   @id @default(cuid())
+  postId      String
+  post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  parentId    String?  // for threaded replies
+  parent      Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies     Comment[] @relation("CommentReplies")
+  name        String
+  email       String
+  content     String   @db.Text
+  isAdmin     Boolean  @default(false)  // true when comment is by the site admin
+  notifyReply Boolean  @default(true)   // opt-in to email on reply
+  approved    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  deletedAt   DateTime? // soft delete
 
   @@index([postId])
   @@index([parentId])

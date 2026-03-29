@@ -277,3 +277,73 @@ export function monthlyDigestEmailText({
     `Unsubscribe: ${unsubscribeUrl}`,
   ].join("\n");
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Comment Reply Notification Email                                           */
+/* -------------------------------------------------------------------------- */
+
+interface CommentReplyEmailProps {
+  commenterName: string;     // name of the person who left the original comment
+  replierName: string;       // name of the person who replied
+  replyContent: string;      // plain-text reply body
+  postTitle: string;
+  postUrl: string;           // full URL to the post
+  isAdminReply: boolean;     // whether the replier is the site admin
+}
+
+export function commentReplyEmailHtml({
+  commenterName,
+  replierName,
+  replyContent,
+  postTitle,
+  postUrl,
+  isAdminReply,
+}: CommentReplyEmailProps): string {
+  const escapedReply = replyContent
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\n/g, "<br />");
+
+  const badge = isAdminReply
+    ? `<span style="display:inline-block;background:#0f172a;color:#fff;font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;margin-left:8px;">Author</span>`
+    : "";
+
+  const body = `
+    <div style="background-color:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:32px;margin-bottom:24px;">
+      <p style="font-size:14px;color:#64748b;margin:0 0 8px 0;">New reply to your comment</p>
+      <h1 style="font-size:20px;font-weight:700;color:#0f172a;margin:0 0 16px 0;line-height:1.3;">
+        ${replierName}${badge} replied on <em>${postTitle}</em>
+      </h1>
+      <div style="background:#f8fafc;border-left:4px solid #0f172a;padding:16px;border-radius:4px;margin:0 0 24px 0;">
+        <p style="font-size:14px;color:#334155;line-height:1.6;margin:0;">${escapedReply}</p>
+      </div>
+      <a href="${postUrl}" style="display:inline-block;background-color:#0f172a;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;padding:10px 24px;border-radius:8px;">
+        View on blog →
+      </a>
+    </div>`;
+  const footer = `
+      <p style="font-size:12px;color:#94a3b8;margin:0;">
+        You received this because you left a comment on ${siteConfig.name}'s blog.
+      </p>`;
+  return emailShell(`${replierName} replied to your comment`, body, footer);
+}
+
+export function commentReplyEmailText({
+  commenterName,
+  replierName,
+  replyContent,
+  postTitle,
+  postUrl,
+  isAdminReply,
+}: CommentReplyEmailProps): string {
+  return [
+    `Hi ${commenterName},`,
+    "",
+    `${replierName}${isAdminReply ? " (Author)" : ""} replied to your comment on "${postTitle}":`,
+    "",
+    replyContent,
+    "",
+    `View on the blog: ${postUrl}`,
+  ].join("\n");
+}

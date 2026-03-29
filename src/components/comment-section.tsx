@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { MessageCircle, Loader2, Reply, ChevronDown, ChevronUp } from "lucide-react";
+import { MessageCircle, Loader2, Reply, ChevronDown, ChevronUp, ShieldCheck } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
 interface Comment {
@@ -14,6 +14,7 @@ interface Comment {
   content: string;
   createdAt: string;
   parentId: string | null;
+  isAdmin?: boolean;
   replies?: Comment[];
 }
 
@@ -34,7 +35,15 @@ function CommentThread({
     <div className={depth > 0 ? "ml-6 border-l-2 border-muted pl-4" : ""}>
       <div className="rounded-lg border p-4">
         <div className="flex items-center justify-between mb-2">
-          <span className="font-medium">{comment.name}</span>
+          <div className="flex items-center gap-2">
+            <span className="font-medium">{comment.name}</span>
+            {comment.isAdmin && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                <ShieldCheck className="h-3 w-3" />
+                Author
+              </span>
+            )}
+          </div>
           <span className="text-xs text-muted-foreground">
             {formatDate(comment.createdAt)}
           </span>

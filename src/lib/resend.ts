@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { siteConfig } from "@/lib/constants";
 
 const resendApiKey = process.env.RESEND_API_KEY;
 
@@ -20,6 +21,10 @@ export const emailFromBlog =
 /** digest@ — monthly digest emails */
 export const emailFromDigest =
   process.env.RESEND_FROM_DIGEST || `Monthly Digest <digest@${domain}>`;
+
+/** notifications@ — comment reply notifications */
+export const emailFromNotify =
+  process.env.RESEND_FROM_NOTIFY || `${siteConfig.name} <notifications@${domain}>`;
 
 /** @deprecated — use the specific variants above */
 export const emailFrom = emailFromHello;

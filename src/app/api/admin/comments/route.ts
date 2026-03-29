@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { isValidRevealToken } from "@/app/api/admin/verify-email/route";
+import { notifyCommentReply } from "@/lib/notify-comment-reply";
 
 function maskEmail(email: string): string {
   const [local, domain] = email.split("@");
@@ -75,12 +76,84 @@ export async function PATCH(request: NextRequest) {
     const comment = await prisma.comment.update({
       where: { id },
       data,
+      include: { post: { select: { title: true, slug: true } } },
     });
+
+    // When approving a reply, notify the parent commenter (fire-and-forget)
+    if (approved === true && comment.parentId) {
+      notifyCommentReply({
+        parentCommentId: comment.parentId,
+        replierName: comment.name,
+        replyContent: comment.content,
+        postSlug: comment.post.slug,
+        postTitle: comment.post.title,
+        isAdminReply: comment.isAdmin,
+      }).catch(() => {});
+    }
 
     return NextResponse.json({ comment });
   } catch (error) {
     console.error("Error updating comment:", error);
     return NextResponse.json({ error: "Failed to update comment" }, { status: 500 });
+  }
+}
+
+// POST /api/admin/comments - Admin reply to a comment
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || (session.user as any)?.role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { parentId, content } = await request.json();
+
+    if (!parentId || typeof content !== "string" || content.trim().length === 0) {
+      return NextResponse.json({ error: "parentId and content are required" }, { status: 400 });
+    }
+
+    if (content.length > 2000) {
+      return NextResponse.json({ error: "Reply too long (max 2000 chars)" }, { status: 400 });
+    }
+
+    const parentComment = await prisma.comment.findUnique({
+      where: { id: parentId },
+      select: { id: true, postId: true, post: { select: { title: true, slug: true } } },
+    });
+
+    if (!parentComment) {
+      return NextResponse.json({ error: "Parent comment not found" }, { status: 404 });
+    }
+
+    const adminName = session.user?.name || "Admin";
+    const adminEmail = session.user?.email || "";
+
+    const reply = await prisma.comment.create({
+      data: {
+        postId: parentComment.postId,
+        parentId,
+        name: adminName,
+        email: adminEmail,
+        content: content.trim(),
+        isAdmin: true,
+        approved: true, // admin replies are auto-approved
+      },
+    });
+
+    // Notify the parent commenter (fire-and-forget)
+    notifyCommentReply({
+      parentCommentId: parentId,
+      replierName: adminName,
+      replyContent: content.trim(),
+      postSlug: parentComment.post.slug,
+      postTitle: parentComment.post.title,
+      isAdminReply: true,
+    }).catch(() => {});
+
+    return NextResponse.json({ reply }, { status: 201 });
+  } catch (error) {
+    console.error("Error creating admin reply:", error);
+    return NextResponse.json({ error: "Failed to create reply" }, { status: 500 });
   }
 }
 

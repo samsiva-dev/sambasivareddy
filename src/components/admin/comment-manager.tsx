@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -15,6 +16,7 @@ import {
   Eye,
   EyeOff,
   Mail,
+  Reply,
 } from "lucide-react";
 import Link from "next/link";
 import { formatDate } from "@/lib/utils";
@@ -25,6 +27,7 @@ interface Comment {
   email: string;
   content: string;
   approved: boolean;
+  isAdmin: boolean;
   createdAt: string;
   post: { title: string; slug: string };
 }
@@ -41,6 +44,11 @@ export function CommentManager() {
   const [verifyStep, setVerifyStep] = useState<"idle" | "sending" | "code" | "verifying">("idle");
   const [code, setCode] = useState("");
   const [verifyError, setVerifyError] = useState<string | null>(null);
+
+  // Admin reply state
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState("");
+  const [replySubmitting, setReplySubmitting] = useState(false);
 
   const fetchComments = async () => {
     setLoading(true);
@@ -137,6 +145,29 @@ export function CommentManager() {
       // ignore
     } finally {
       setActionInProgress(null);
+    }
+  };
+
+  const handleReply = async (parentId: string) => {
+    if (!replyContent.trim()) return;
+    setReplySubmitting(true);
+    try {
+      const res = await fetch("/api/admin/comments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ parentId, content: replyContent.trim() }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to reply");
+      }
+      setReplyingTo(null);
+      setReplyContent("");
+      fetchComments();
+    } catch (err: any) {
+      alert(err.message || "Failed to reply");
+    } finally {
+      setReplySubmitting(false);
     }
   };
 
@@ -258,6 +289,12 @@ export function CommentManager() {
                       <Badge variant={comment.approved ? "default" : "secondary"}>
                         {comment.approved ? "Approved" : "Pending"}
                       </Badge>
+                      {comment.isAdmin && (
+                        <Badge variant="outline" className="text-primary border-primary">
+                          <ShieldCheck className="mr-1 h-3 w-3" />
+                          Admin
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-sm text-muted-foreground mb-2 whitespace-pre-wrap">
                       {comment.content}
@@ -304,8 +341,52 @@ export function CommentManager() {
                     >
                       <Trash2 className="h-4 w-4 text-red-600" />
                     </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Reply as admin"
+                      onClick={() => {
+                        setReplyingTo(replyingTo === comment.id ? null : comment.id);
+                        setReplyContent("");
+                      }}
+                    >
+                      <Reply className="h-4 w-4 text-blue-600" />
+                    </Button>
                   </div>
                 </div>
+                {replyingTo === comment.id && (
+                  <div className="mt-3 border-t pt-3">
+                    <Textarea
+                      placeholder="Write your reply..."
+                      value={replyContent}
+                      onChange={(e) => setReplyContent(e.target.value)}
+                      rows={3}
+                      maxLength={2000}
+                      className="mb-2"
+                    />
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => handleReply(comment.id)}
+                        disabled={replySubmitting || !replyContent.trim()}
+                      >
+                        {replySubmitting ? (
+                          <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                        ) : (
+                          <Reply className="mr-2 h-3 w-3" />
+                        )}
+                        Reply as Admin
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => { setReplyingTo(null); setReplyContent(""); }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

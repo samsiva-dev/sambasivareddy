@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Comment" ADD COLUMN "isAdmin" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "Comment" ADD COLUMN "notifyReply" BOOLEAN NOT NULL DEFAULT true;
