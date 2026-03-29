@@ -13,9 +13,9 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="container mx-auto max-w-5xl px-4 py-24 md:py-32">
         <div className="flex flex-col items-start gap-4">
-          <Badge variant="secondary" className="rounded-md">
+          {/* <Badge variant="secondary" className="rounded-md">
             Available for opportunities
-          </Badge>
+          </Badge> */}
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
             Hi, I&apos;m{" "}
             <span className="bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
