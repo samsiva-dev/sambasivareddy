@@ -126,11 +126,20 @@ export async function GET() {
       orderBy: { date: "asc" },
     });
 
-    const dailyViews: Record<string, number> = {};
+    const dailyViewsRaw: Record<string, number> = {};
     dailyViewStats.forEach((stat) => {
       const key = stat.date.toISOString().split("T")[0];
-      dailyViews[key] = (dailyViews[key] || 0) + stat.views;
+      dailyViewsRaw[key] = (dailyViewsRaw[key] || 0) + stat.views;
     });
+
+    // Fill in all 30 days so the chart has no gaps
+    const dailyViews: Record<string, number> = {};
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().split("T")[0];
+      dailyViews[key] = dailyViewsRaw[key] || 0;
+    }
 
     // Popular tags (by total views of their posts)
     const tagsWithViews = await prisma.tag.findMany({

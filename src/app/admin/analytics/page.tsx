@@ -158,7 +158,9 @@ export default function AnalyticsPage() {
 
   // Daily views chart data (last 30 days)
   const dailyViewDays = Object.keys(dailyViews).sort();
-  const maxDailyViews = Math.max(...Object.values(dailyViews), 1);
+  const dailyViewValues = dailyViewDays.map((d) => dailyViews[d] || 0);
+  const maxDailyViews = Math.max(...dailyViewValues, 1);
+  const totalDailyViews = dailyViewValues.reduce((a, b) => a + b, 0);
 
   return (
     <div className="container mx-auto max-w-5xl px-4 py-16 animate-fade-in">
@@ -202,10 +204,13 @@ export default function AnalyticsPage() {
             <CardTitle className="text-lg flex items-center gap-2">
               <BarChart3 className="h-5 w-5" />
               Daily Views (Last 30 Days)
+              <span className="text-sm font-normal text-muted-foreground ml-auto">
+                {totalDailyViews.toLocaleString()} total
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-end gap-[2px] h-32">
+            <div className="flex items-end gap-[2px] h-40">
               {dailyViewDays.map((day) => {
                 const views = dailyViews[day] || 0;
                 const height = maxDailyViews > 0 ? (views / maxDailyViews) * 100 : 0;
@@ -220,8 +225,12 @@ export default function AnalyticsPage() {
                     title={`${label}: ${views} views`}
                   >
                     <div
-                      className="bg-primary/70 hover:bg-primary rounded-t-sm transition-all w-full"
-                      style={{ height: `${Math.max(height, 2)}%` }}
+                      className={`rounded-t-sm transition-all w-full ${
+                        views > 0
+                          ? "bg-primary/70 hover:bg-primary"
+                          : "bg-muted/40"
+                      }`}
+                      style={{ height: views > 0 ? `${Math.max(height, 4)}%` : "2px" }}
                     />
                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-popover text-popover-foreground text-xs rounded px-2 py-1 shadow-md whitespace-nowrap z-10">
                       {label}: {views}
