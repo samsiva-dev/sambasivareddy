@@ -221,7 +221,7 @@ export default function AnalyticsPage() {
                 return (
                   <div
                     key={day}
-                    className="flex-1 group relative"
+                    className="flex-1 group relative h-full flex items-end"
                     title={`${label}: ${views} views`}
                   >
                     <div
