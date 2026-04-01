@@ -111,6 +111,13 @@ export function NewsletterForm() {
           {status === "loading" ? "..." : "Subscribe"}
         </Button>
       </form>
+      <p className="mt-2 text-xs text-muted-foreground">
+        By subscribing, you agree to our{" "}
+        <a href="/privacy" className="underline hover:text-foreground">
+          Privacy Policy
+        </a>
+        .
+      </p>
       {message && (
         <p
           className={`mt-2 text-sm ${

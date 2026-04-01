@@ -45,6 +45,11 @@ export function Footer() {
                   Resume
                 </Link>
               </li>
+              <li>
+                <Link href="/privacy" className="hover:text-foreground transition-colors">
+                  Privacy Policy
+                </Link>
+              </li>
             </ul>
           </div>
 
