@@ -18,6 +18,7 @@ import { BookmarkButton } from "@/components/bookmark-button";
 import { ViewTracker } from "@/components/view-tracker";
 import { CommentSection } from "@/components/comment-section";
 import { WebmentionSection } from "@/components/webmention-section";
+import { CodeBlockEnhancer } from "@/components/code-block-enhancer";
 
 export const revalidate = 60;
 export const dynamicParams = true;
@@ -281,10 +282,12 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             )}
 
             {/* Content */}
-            <div
-              className="prose dark:prose-invert"
-              dangerouslySetInnerHTML={{ __html: post.content }}
-            />
+            <CodeBlockEnhancer>
+              <div
+                className="prose dark:prose-invert"
+                dangerouslySetInnerHTML={{ __html: post.content }}
+              />
+            </CodeBlockEnhancer>
 
             {/* Reactions */}
             <div className="mt-12 pt-6 border-t">
