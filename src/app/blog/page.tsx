@@ -90,7 +90,7 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
     <div className="container mx-auto max-w-5xl px-4 py-16 animate-fade-in">
       <h1 className="text-4xl font-bold tracking-tight mb-4">Blog</h1>
       <p className="text-lg text-muted-foreground mb-8">
-        Thoughts on software engineering, web development, and technology.
+        Thoughts on software engineering, web development, technology, books, personal growth, and more.
       </p>
 
       {/* Search */}
