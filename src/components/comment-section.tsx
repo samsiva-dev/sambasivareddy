@@ -133,7 +133,7 @@ function CommentForm({
         throw new Error(data.error || "Failed to submit");
       }
 
-      setMessage({ type: "success", text: "Comment submitted! It will appear after moderation." });
+      setMessage({ type: "success", text: "Your comment is under review by the admin. We\u2019ll confirm once it\u2019s approved and visible." });
       setName("");
       setEmail("");
       setContent("");
