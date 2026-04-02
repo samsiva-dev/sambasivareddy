@@ -93,6 +93,7 @@ model Post {
   dailyViewStats DailyViewStat[]
   webmentions    Webmention[]
   readingStats   ReadingStat[]
+  draftShares    DraftShare[]
 
   @@index([slug])
   @@index([published])
@@ -220,4 +221,20 @@ model CsrfToken {
 
   @@index([token])
   @@index([expiresAt])
+}
+
+model DraftShare {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  email     String   // email allowed to access the draft
+  token     String   @unique // unique access token
+  createdAt DateTime @default(now())
+  expiresAt DateTime // share link expiration
+  viewedAt  DateTime? // track when the draft was viewed
+
+  @@unique([postId, email]) // one share per email per post
+  @@index([token])
+  @@index([postId])
+  @@index([email])
 }

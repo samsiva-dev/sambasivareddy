@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,9 +8,18 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { TipTapEditor } from "@/components/admin/tiptap-editor";
 import { slugify } from "@/lib/utils";
-import { Save, Eye, ArrowLeft, X, Loader2, Upload, Download } from "lucide-react";
+import { Save, Eye, ArrowLeft, X, Loader2, Upload, Download, Share2, Copy, Trash2, Check } from "lucide-react";
 import Link from "next/link";
 
 interface PostFormProps {
@@ -70,6 +79,20 @@ export function PostForm({ initialData }: PostFormProps) {
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
+  // Draft sharing state
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [shareEmail, setShareEmail] = useState("");
+  const [sharingDraft, setSharingDraft] = useState(false);
+  const [draftShares, setDraftShares] = useState<Array<{
+    id: string;
+    email: string;
+    token: string;
+    expiresAt: string;
+    viewedAt: string | null;
+  }>>([]);
+  const [copiedShareId, setCopiedShareId] = useState<string | null>(null);
+  const [loadingShares, setLoadingShares] = useState(false);
+
   // Fetch series list
   const fetchSeries = useCallback(() => {
     fetch("/api/admin/series")
@@ -107,6 +130,84 @@ export function PostForm({ initialData }: PostFormProps) {
       alert("Failed to create series");
     } finally {
       setCreatingSeries(false);
+    }
+  };
+
+  // Fetch draft shares for this post
+  const fetchDraftShares = useCallback(async () => {
+    if (!initialData?.id) return;
+    setLoadingShares(true);
+    try {
+      const res = await fetch(`/api/posts/share-draft?postId=${initialData.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setDraftShares(data.shares || []);
+      }
+    } catch {
+      // Silently fail
+    } finally {
+      setLoadingShares(false);
+    }
+  }, [initialData?.id]);
+
+  // Load shares when dialog opens
+  useEffect(() => {
+    if (showShareDialog && initialData?.id) {
+      fetchDraftShares();
+    }
+  }, [showShareDialog, initialData?.id, fetchDraftShares]);
+
+  const handleShareDraft = async () => {
+    if (!shareEmail.trim() || !initialData?.id) return;
+    setSharingDraft(true);
+    try {
+      const res = await fetch("/api/posts/share-draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          postId: initialData.id,
+          email: shareEmail.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || "Failed to share draft");
+        return;
+      }
+      // Copy share URL to clipboard
+      await navigator.clipboard.writeText(data.shareUrl);
+      setCopiedShareId(data.share.id);
+      setTimeout(() => setCopiedShareId(null), 2000);
+      setShareEmail("");
+      fetchDraftShares();
+    } catch {
+      alert("Failed to share draft");
+    } finally {
+      setSharingDraft(false);
+    }
+  };
+
+  const handleCopyShareLink = async (token: string, shareId: string) => {
+    const shareUrl = `${window.location.origin}/draft/${token}`;
+    await navigator.clipboard.writeText(shareUrl);
+    setCopiedShareId(shareId);
+    setTimeout(() => setCopiedShareId(null), 2000);
+  };
+
+  const handleRevokeShare = async (shareId: string) => {
+    if (!confirm("Revoke access for this email?")) return;
+    try {
+      const res = await fetch(`/api/posts/share-draft?shareId=${shareId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || "Failed to revoke share");
+        return;
+      }
+      fetchDraftShares();
+    } catch {
+      alert("Failed to revoke share");
     }
   };
 
@@ -279,6 +380,109 @@ export function PostForm({ initialData }: PostFormProps) {
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
+          )}
+          {/* Share Draft */}
+          {isEditing && (
+            <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Share2 className="mr-2 h-4 w-4" />
+                  Share Draft
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Share Draft</DialogTitle>
+                  <DialogDescription>
+                    Share this draft with specific people by email. Only they can access it.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="flex gap-2">
+                    <Input
+                      type="email"
+                      placeholder="Enter email address"
+                      value={shareEmail}
+                      onChange={(e) => setShareEmail(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleShareDraft();
+                        }
+                      }}
+                    />
+                    <Button onClick={handleShareDraft} disabled={sharingDraft || !shareEmail.trim()}>
+                      {sharingDraft ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        "Share"
+                      )}
+                    </Button>
+                  </div>
+                  {loadingShares ? (
+                    <div className="flex justify-center py-4">
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : draftShares.length > 0 ? (
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground text-sm">Shared with:</Label>
+                      <div className="max-h-48 overflow-y-auto space-y-2">
+                        {draftShares.map((share) => (
+                          <div
+                            key={share.id}
+                            className="flex items-center justify-between gap-2 rounded-md border p-2 text-sm"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="truncate font-medium">{share.email}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {share.viewedAt
+                                  ? `Viewed ${new Date(share.viewedAt).toLocaleDateString()}`
+                                  : "Not yet viewed"}
+                                {" • "}
+                                Expires {new Date(share.expiresAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => handleCopyShareLink(share.token, share.id)}
+                                title="Copy link"
+                              >
+                                {copiedShareId === share.id ? (
+                                  <Check className="h-4 w-4 text-green-500" />
+                                ) : (
+                                  <Copy className="h-4 w-4" />
+                                )}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                onClick={() => handleRevokeShare(share.id)}
+                                title="Revoke access"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No shares yet. Enter an email above to share this draft.
+                    </p>
+                  )}
+                </div>
+                <DialogFooter className="sm:justify-start">
+                  <p className="text-xs text-muted-foreground">
+                    Share links expire in 7 days. Recipients must enter their email to view.
+                  </p>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           )}
           <Button
             variant="outline"
