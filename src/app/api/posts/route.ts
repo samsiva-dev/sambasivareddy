@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
         include: {
           author: { select: { name: true, image: true } },
           tags: true,
+          series: { select: { title: true, slug: true } },
         },
         orderBy: { createdAt: "desc" },
         skip,
