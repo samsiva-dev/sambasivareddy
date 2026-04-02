@@ -249,6 +249,8 @@ export default function DraftPreviewPage() {
               alt={post.title}
               className="w-full h-auto object-cover"
               loading="lazy"
+              crossOrigin="anonymous"
+              referrerPolicy="no-referrer"
             />
           </div>
         )}

@@ -115,6 +115,8 @@ export function TipTapEditor({ content, onChange, onImageUpload }: TipTapEditorP
       Image.configure({
         HTMLAttributes: {
           class: "rounded-lg max-w-full h-auto",
+          crossorigin: "anonymous",
+          referrerpolicy: "no-referrer",
         },
       }),
       Placeholder.configure({
